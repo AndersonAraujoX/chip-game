@@ -146,11 +146,7 @@ let lambdaAlloc = 50.0;
 let lambdaOverlap = 50.0;
 let lambdaDist = 5.0;
 
-// Estado do Solucionador SA
-let solverRunning = false;
-let solverInterval = null;
-let costHistory = [];
-let animSpeed = 50; // ms por iteração
+
 
 // Drag & Drop
 let activeDragBlockId = null;
@@ -183,10 +179,7 @@ const valLambdaOverlap = document.getElementById("val-lambda-overlap");
 const valLambdaDist = document.getElementById("val-lambda-dist");
 
 const btnReset = document.getElementById("btn-reset");
-const btnSolveSA = document.getElementById("btn-solve-sa");
 const btnExport = document.getElementById("btn-export");
-const speedRange = document.getElementById("speed-range");
-const chartContainer = document.getElementById("chart-container");
 const doutoradoComparison = document.getElementById("doutorado-comparison");
 const compManual = document.getElementById("comp-manual");
 
@@ -221,23 +214,10 @@ function setupEventListeners() {
   });
 
   btnReset.addEventListener("click", () => {
-    if (solverRunning) stopSolver();
     resetLayout();
   });
 
-  btnSolveSA.addEventListener("click", () => {
-    if (solverRunning) {
-      stopSolver();
-    } else {
-      startSolver();
-    }
-  });
-
   btnExport.addEventListener("click", exportLayout);
-
-  speedRange.addEventListener("input", (e) => {
-    animSpeed = 101 - parseInt(e.target.value); // Inverte para que maior valor = mais rápido (menor delay)
-  });
 
   // Evento global de redimensionamento para ajustar as fiações SVG
   window.addEventListener("resize", () => {
@@ -255,8 +235,6 @@ function setupEventListeners() {
 
 // 4. Carregamento de Nível
 function loadLevel(levelId) {
-  if (solverRunning) stopSolver();
-  
   const level = LEVELS[levelId];
   gridM = level.M;
   gridN = level.N;
@@ -308,9 +286,7 @@ function loadLevel(levelId) {
     doutoradoComparison.style.display = "none";
   }
 
-  // Ocultar gráfico de evolução até que o solver rode
-  chartContainer.style.display = "none";
-  costHistory = [];
+
 
   // Resetar parâmetros para valores padrão do nível se for nível 2
   if (levelId === 2) {
@@ -561,8 +537,6 @@ function positionPlacedBlock(block, blockEl) {
 // 7. Drag and Drop com Pointer Events
 function setupBlockDragging(blockEl) {
   blockEl.addEventListener("pointerdown", (e) => {
-    if (solverRunning) return;
-    
     const bid = parseInt(blockEl.dataset.id);
     if (blocks[bid].fixed) return;
     
@@ -1126,278 +1100,7 @@ styleSheet.innerHTML = `
 `;
 document.head.appendChild(styleSheet);
 
-// 10. Solucionador Simulated Annealing (Visual)
-async function startSolver() {
-  if (solverRunning) return;
-  
-  solverRunning = true;
-  btnSolveSA.textContent = "🛑 Parar SA";
-  btnSolveSA.classList.remove("btn-primary");
-  btnSolveSA.classList.add("btn-secondary");
-  chartContainer.style.display = "block";
-  
-  costHistory = [];
-  
-  // Parâmetros do SA
-  let T = 120.0;
-  const coolingRate = 0.98;
-  const minT = 0.05;
-  const stepsPerTemp = 15;
-  
-  // 1. Estado inicial (se todos estivessem na prateleira, espalha aleatoriamente)
-  const level = LEVELS[currentLevelId];
-  let currentState = {};
-  
-  for (let bid in blocks) {
-    const b = blocks[bid];
-    currentState[bid] = {
-      placed: b.placed,
-      m: b.m,
-      n: b.n,
-      rot: b.rot,
-      W: b.W,
-      H: b.H
-    };
-    
-    // Se não estiver colocado, inicia numa coordenada aleatória válida
-    if (!b.placed && !b.fixed) {
-      const pos = getRandomPlacement(bid);
-      currentState[bid] = {
-        placed: true,
-        m: pos.m,
-        n: pos.n,
-        rot: pos.rot,
-        W: pos.rot === 0 ? b.W_orig : b.H_orig,
-        H: pos.rot === 0 ? b.H_orig : b.W_orig
-      };
-    }
-  }
-  
-  let currentEnergy = calculateStateEnergy(currentState);
-  
-  let bestState = copyState(currentState);
-  let bestEnergy = currentEnergy;
-  
-  costHistory.push(currentEnergy);
-  updateChart();
-  
-  // Loop de Recozimento
-  while (T > minT && solverRunning) {
-    for (let step = 0; step < stepsPerTemp && solverRunning; step++) {
-      // Perturbação: altera a posição/rotação de um bloco não fixo
-      const nextState = perturbState(currentState);
-      const nextEnergy = calculateStateEnergy(nextState);
-      
-      const dE = nextEnergy - currentEnergy;
-      
-      // Critério de Metrópole
-      if (dE < 0 || Math.random() < Math.exp(-dE / T)) {
-        currentState = nextState;
-        currentEnergy = nextEnergy;
-        
-        if (currentEnergy < bestEnergy) {
-          bestState = copyState(currentState);
-          bestEnergy = currentEnergy;
-        }
-      }
-    }
-    
-    // Resfria
-    T *= coolingRate;
-    
-    // Atualiza o estado físico global e renderiza
-    applyStateToBlocks(currentState);
-    renderShelfAndPlaced();
-    updateStatsAndWiring();
-    
-    costHistory.push(currentEnergy);
-    updateChart();
-    
-    // Espera pelo atraso ajustado no slider
-    await new Promise(resolve => setTimeout(resolve, animSpeed));
-  }
-  
-  if (solverRunning) {
-    // Aplica a melhor solução encontrada
-    applyStateToBlocks(bestState);
-    renderShelfAndPlaced();
-    updateStatsAndWiring();
-    
-    const valid = checkValidity();
-    if (valid) {
-      showToast(`SA Concluído! Layout válido encontrado. Custo: ${bestEnergy.toFixed(2)}`, "success");
-    } else {
-      showToast("SA Concluído, mas o layout possui colisões ou restrições pendentes.", "warning");
-    }
-    stopSolver();
-  }
-}
 
-function stopSolver() {
-  solverRunning = false;
-  btnSolveSA.textContent = "⚡ Resolver via SA";
-  btnSolveSA.classList.remove("btn-secondary");
-  btnSolveSA.classList.add("btn-primary");
-}
-
-// Copia o dicionário de estados
-function copyState(state) {
-  const copy = {};
-  for (let bid in state) {
-    copy[bid] = { ...state[bid] };
-  }
-  return copy;
-}
-
-// Aplica o estado de simulação de volta aos blocos reais da aplicação
-function applyStateToBlocks(state) {
-  for (let bid in state) {
-    blocks[bid].placed = state[bid].placed;
-    blocks[bid].m = state[bid].m;
-    blocks[bid].n = state[bid].n;
-    blocks[bid].rot = state[bid].rot;
-    blocks[bid].W = state[bid].W;
-    blocks[bid].H = state[bid].H;
-  }
-}
-
-// Calcula energia clássica QUBO de um estado temporário (sem mexer nos blocos globais)
-function calculateStateEnergy(state) {
-  // Transforma o estado do dicionário em vetor binário de decisão x
-  const x = new Array(qubitMap.length).fill(0);
-  for (let i = 0; i < qubitMap.length; i++) {
-    const item = qubitMap[i];
-    const b = state[item.alpha];
-    if (b && b.placed && b.m === item.m && b.n === item.n) {
-      if (item.rot === undefined || b.rot === item.rot) {
-        x[i] = 1;
-      }
-    }
-  }
-  return calculateExactQUBOCost(x);
-}
-
-// Gera um posicionamento aleatório que respeita dimensões do grid e restrições de fronteira
-function getRandomPlacement(bid) {
-  const level = LEVELS[currentLevelId];
-  const W_orig = level.block_sizes[bid][0];
-  const H_orig = level.block_sizes[bid][1];
-  
-  let rotations = [0];
-  if (level.allow_rotation && W_orig !== H_orig) {
-    rotations.push(1);
-  }
-  
-  const rot = rotations[Math.floor(Math.random() * rotations.length)];
-  const W = rot === 0 ? W_orig : H_orig;
-  const H = rot === 0 ? H_orig : W_orig;
-  
-  // Posições possíveis
-  let candidates = [];
-  const max_m = gridM - H + 1;
-  const max_n = gridN - W + 1;
-  
-  for (let m = 0; m < max_m; m++) {
-    for (let n = 0; n < max_n; n++) {
-      // Verifica restrição de fronteira
-      if (level.boundary_constraints[bid]) {
-        const c = level.boundary_constraints[bid];
-        const is_n = (m === 0);
-        const is_s = (m === gridM - H);
-        const is_w = (n === 0);
-        const is_e = (n === gridN - W);
-        
-        if (c === 'N' && !is_n) continue;
-        if (c === 'S' && !is_s) continue;
-        if (c === 'W' && !is_w) continue;
-        if (c === 'E' && !is_e) continue;
-      }
-      candidates.push({ m, n, rot });
-    }
-  }
-  
-  if (candidates.length > 0) {
-    return candidates[Math.floor(Math.random() * candidates.length)];
-  }
-  
-  // Fallback se restrição for muito rígida (força colisão)
-  return { m: 0, n: 0, rot: 0 };
-}
-
-// Perturbação clássica de Simulated Annealing
-function perturbState(state) {
-  const nextState = copyState(state);
-  const bids = Object.keys(nextState).filter(bid => !blocks[bid].fixed);
-  
-  if (bids.length === 0) return nextState;
-  
-  // Escolhe um bloco aleatório não-fixo
-  const bid = bids[Math.floor(Math.random() * bids.length)];
-  const b = nextState[bid];
-  const level = LEVELS[currentLevelId];
-  
-  const randVal = Math.random();
-  
-  if (randVal < 0.4 && level.allow_rotation && b.W !== b.H) {
-    // Rotação: inverte dimensões
-    const newW = b.H;
-    const newH = b.W;
-    b.W = newW;
-    b.H = newH;
-    b.rot = b.rot === 0 ? 1 : 0;
-    
-    // Ajusta coordenadas se sair do grid
-    if (b.m + b.H > gridM) b.m = gridM - b.H;
-    if (b.n + b.W > gridN) b.n = gridN - b.W;
-    
-    // Garante limites positivos
-    b.m = Math.max(0, b.m);
-    b.n = Math.max(0, b.n);
-  } else {
-    // Translação: move para uma coordenada aleatória que respeite a fronteira
-    const newPos = getRandomPlacement(bid);
-    b.m = newPos.m;
-    b.n = newPos.n;
-    b.rot = newPos.rot;
-    b.W = newPos.rot === 0 ? blocks[bid].W_orig : blocks[bid].H_orig;
-    b.H = newPos.rot === 0 ? blocks[bid].H_orig : blocks[bid].W_orig;
-  }
-  
-  return nextState;
-}
-
-// 11. Mini-gráfico SVG da Evolução do Custo (Energia)
-function updateChart() {
-  const svg = document.getElementById("chart-svg");
-  const path = document.getElementById("chart-path");
-  
-  if (costHistory.length < 2) return;
-  
-  const width = svg.clientWidth || 280;
-  const height = svg.clientHeight || 120;
-  const padding = 15;
-  
-  const maxVal = Math.max(...costHistory);
-  const minVal = Math.min(...costHistory);
-  const valRange = maxVal - minVal || 1.0;
-  
-  const xStep = (width - padding * 2) / (costHistory.length - 1);
-  
-  let d = "";
-  for (let i = 0; i < costHistory.length; i++) {
-    const x = padding + i * xStep;
-    // Mapeamento Y invertido (custo maior no topo)
-    const y = height - padding - ((costHistory[i] - minVal) / valRange) * (height - padding * 2);
-    
-    if (i === 0) {
-      d += `M ${x} ${y}`;
-    } else {
-      d += ` L ${x} ${y}`;
-    }
-  }
-  
-  path.setAttribute("d", d);
-}
 
 // 12. Utilitários (Toast & Export)
 function showToast(msg, type = "info") {

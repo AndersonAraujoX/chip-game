@@ -126,27 +126,7 @@
         </div>
       </div>
 
-      <!-- Histórico de Custo do Solver -->
-      <div class="chart-container" id="chart-container" style="display: none;">
-        <div style="position: absolute; top: 5px; left: 8px; font-size: 10px; color: var(--text-muted); font-weight: bold; pointer-events: none;">Evolução do Custo (Energia SA)</div>
-        <svg class="chart-svg" id="chart-svg">
-          <path class="chart-path" id="chart-path" d=""></path>
-        </svg>
-      </div>
 
-      <!-- Solucionador Automático -->
-      <div class="comparison-card" style="border-top: 1px solid var(--border-glass); padding-top: 12px;">
-        <div class="panel-title" style="margin-bottom: 8px; font-size: 16px;">
-          <span>🤖</span> Solucionador (Simulated Annealing)
-        </div>
-        <div class="solver-controls" style="margin-bottom: 8px;">
-          <button id="btn-solve-sa" class="btn btn-primary" style="flex: 1; padding: 8px 12px; font-size: 13px;">⚡ Resolver via SA</button>
-        </div>
-        <div class="speed-control">
-          <label for="speed-range">Velocidade da Animação:</label>
-          <input type="range" id="speed-range" min="1" max="100" value="50" style="flex: 1;">
-        </div>
-      </div>
 
       <!-- Comparativo com Doutorado (Apenas Nível 2) -->
       <div class="comparison-card" id="doutorado-comparison" style="display: none;">
