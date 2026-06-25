@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Otimizador de Layout de Chips (Floorplanning)</title>
+  <meta name="description" content="Jogo de arrastar e soltar interativo para otimização de distribuição de blocos em circuitos integrados (floorplanning).">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Header -->
+  <header>
+    <h1>Otimizador de Layout de Chips <span>Floorplanning</span></h1>
+    <div class="level-selector">
+      <label for="level-select" style="font-size: 13px; color: var(--text-muted); margin-right: 8px;">Dificuldade:</label>
+      <select id="level-select">
+        <option value="1">Nível 1: Introdução (3x3 - 3 Blocos)</option>
+        <option value="2" selected>Nível 2: Doutorado (3x3 - 5 Blocos - 11 Qubits)</option>
+        <option value="3">Nível 3: Intermediário (5x5 - 6 Blocos)</option>
+        <option value="4">Nível 4: Desafio Complexo (8x8 - 10 Blocos)</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Main Grid Layout -->
+  <main>
+    
+    <!-- Sidebar Esquerda: Infos & Configurações -->
+    <section class="panel sidebar-left" aria-label="Painel de Configurações">
+      <div class="panel-title">
+        <span>⚙️</span> Configurações do Nível
+      </div>
+      
+      <div class="info-card">
+        <h4 id="level-title">Carregando Nível...</h4>
+        <p id="level-desc">Descrição do nível carregada dinamicamente via JavaScript.</p>
+      </div>
+
+      <div class="info-card" id="level-constraints-card">
+        <h4>Regras Específicas:</h4>
+        <ul id="level-constraints-list" style="padding-left: 18px; margin-top: 5px; color: var(--text-muted); font-size: 13px;">
+          <!-- Lista de regras preenchida via JS -->
+        </ul>
+      </div>
+
+      <div class="panel-title" style="margin-top: 15px;">
+        <span>⚖️</span> Pesos de Penalidade
+      </div>
+      <div class="parameters-group">
+        <div class="parameter-item">
+          <div style="display:flex; justify-content:space-between;">
+            <label for="lambda-alloc">Alocação Única (λ_alloc)</label>
+            <span id="val-lambda-alloc">50.0</span>
+          </div>
+          <input type="range" id="lambda-alloc" min="10" max="150" step="5" value="50">
+        </div>
+        
+        <div class="parameter-item">
+          <div style="display:flex; justify-content:space-between;">
+            <label for="lambda-overlap">Colisão/Sobreposição (λ_overlap)</label>
+            <span id="val-lambda-overlap">50.0</span>
+          </div>
+          <input type="range" id="lambda-overlap" min="10" max="150" step="5" value="50">
+        </div>
+        
+        <div class="parameter-item">
+          <div style="display:flex; justify-content:space-between;">
+            <label for="lambda-dist">Comprimento de Fio (λ_dist)</label>
+            <span id="val-lambda-dist">5.0</span>
+          </div>
+          <input type="range" id="lambda-dist" min="1" max="20" step="0.5" value="5">
+        </div>
+      </div>
+
+      <div class="controls-actions">
+        <button id="btn-reset" class="btn btn-secondary">🔄 Resetar Layout</button>
+      </div>
+    </section>
+
+    <!-- Centro: Área do Grid de Floorplanning -->
+    <section class="game-center" aria-label="Tabuleiro Grid">
+      <div class="grid-outer-container">
+        <div class="grid-wrapper" id="grid-wrapper">
+          <!-- O grid em si -->
+          <div class="grid-board" id="grid-board"></div>
+          
+          <!-- Elemento SVG absoluto para conexões/fiações -->
+          <svg class="wiring-overlay" id="wiring-overlay"></svg>
+          
+          <!-- Elementos absolutos representando blocos colocados (gerados por JS) -->
+          <div id="placed-blocks-container"></div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 15px; font-size: 12px; color: var(--text-muted); text-align: center;">
+        <span style="color: var(--accent-cyan); font-weight: bold;">Instruções:</span> Arraste os blocos do painel direito para o grid. Pressione <kbd style="background:#1e293b; padding: 2px 5px; border-radius: 4px; border:1px solid var(--border-glass);">R</kbd> ou clique duas vezes no bloco para rotacionar 90°.
+      </div>
+    </section>
+
+    <!-- Sidebar Direita: Estatísticas & Inventário -->
+    <section class="panel sidebar-right" aria-label="Estatísticas e Inventário">
+      <div class="panel-title">
+        <span>📊</span> Estatísticas Clássicas
+      </div>
+      
+      <div class="stats-container">
+        <div class="stat-box">
+          <span class="stat-label">Custo Total:</span>
+          <span class="stat-value cost-highlight" id="stat-total-cost">0.00</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Layout Válido:</span>
+          <span class="stat-value invalid" id="stat-valid">Não</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Sobreposições (Células):</span>
+          <span class="stat-value warning" id="stat-overlaps">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Fiação (Distância Manhattan):</span>
+          <span class="stat-value" id="stat-wirelength">0.00</span>
+        </div>
+      </div>
+
+      <!-- Histórico de Custo do Solver -->
+      <div class="chart-container" id="chart-container" style="display: none;">
+        <div style="position: absolute; top: 5px; left: 8px; font-size: 10px; color: var(--text-muted); font-weight: bold; pointer-events: none;">Evolução do Custo (Energia SA)</div>
+        <svg class="chart-svg" id="chart-svg">
+          <path class="chart-path" id="chart-path" d=""></path>
+        </svg>
+      </div>
+
+      <!-- Solucionador Automático -->
+      <div class="comparison-card" style="border-top: 1px solid var(--border-glass); padding-top: 12px;">
+        <div class="panel-title" style="margin-bottom: 8px; font-size: 16px;">
+          <span>🤖</span> Solucionador (Simulated Annealing)
+        </div>
+        <div class="solver-controls" style="margin-bottom: 8px;">
+          <button id="btn-solve-sa" class="btn btn-primary" style="flex: 1; padding: 8px 12px; font-size: 13px;">⚡ Resolver via SA</button>
+        </div>
+        <div class="speed-control">
+          <label for="speed-range">Velocidade da Animação:</label>
+          <input type="range" id="speed-range" min="1" max="100" value="50" style="flex: 1;">
+        </div>
+      </div>
+
+      <!-- Comparativo com Doutorado (Apenas Nível 2) -->
+      <div class="comparison-card" id="doutorado-comparison" style="display: none;">
+        <h4>🏆 Benchmarks (Seu Doutorado):</h4>
+        <div class="comparison-grid">
+          <div class="comparison-item">
+            <div class="comparison-label">Manual (Você)</div>
+            <div class="comparison-value" id="comp-manual">-</div>
+          </div>
+          <div class="comparison-item">
+            <div class="comparison-label">QAOA (Optimum)</div>
+            <div class="comparison-value" style="color: var(--accent-purple);" id="comp-qaoa">13.50</div>
+          </div>
+          <div class="comparison-item" style="grid-column: span 2;">
+            <div class="comparison-label">Neal SA (Clássico Ótimo)</div>
+            <div class="comparison-value" style="color: var(--success);" id="comp-sa">13.50</div>
+          </div>
+        </div>
+        <p style="font-size: 9px; color: var(--text-muted); margin-top: 4px; line-height: 1.2;">*Valores com os pesos padrões (λ_alloc=50, λ_overlap=50, λ_dist=5). A solução ótima possui custo ~13.50 com colisões zero e todas as restrições satisfeitas.</p>
+      </div>
+
+      <!-- Prateleira de Inventário -->
+      <div class="panel-title" style="margin-top: 15px; margin-bottom: 8px;">
+        <span>📦</span> Componentes Disponíveis
+      </div>
+      <div class="blocks-shelf" id="blocks-shelf">
+        <!-- Blocos para arrastar gerados via JS -->
+      </div>
+
+      <button id="btn-export" class="btn btn-outline" style="margin-top: auto; padding: 6px 12px; font-size: 12px;">📤 Exportar Layout (JSON)</button>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    Desenvolvido como ferramenta auxiliar de Floorplanning | Otimização Combinatória Clássica (Simulated Annealing) &amp; Computação Quântica (QAOA / Ising)
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
