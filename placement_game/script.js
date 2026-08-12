@@ -135,7 +135,7 @@ const BLOCK_COLORS = [
 ];
 
 // 2. Estado Global do Jogo
-let currentLevelId = 2; // Começa no nível do doutorado
+let currentLevelId = 1; // Começa no Nível 1 (Introdução)
 let gridM = 3;
 let gridN = 3;
 let blocks = {}; // Estado físico de cada bloco: { id: { placed: bool, m: int, n: int, rot: int, W: int, H: int, W_orig: int, H_orig: int, fixed: bool, boundary: string } }
