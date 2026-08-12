@@ -154,34 +154,44 @@ let dragOffset = { x: 0, y: 0 };
 let currentHoverCell = null;
 
 // Elementos da DOM
-const gridBoard = document.getElementById("grid-board");
-const gridWrapper = document.getElementById("grid-wrapper");
-const placedBlocksContainer = document.getElementById("placed-blocks-container");
-const blocksShelf = document.getElementById("blocks-shelf");
-const wiringOverlay = document.getElementById("wiring-overlay");
-const levelSelect = document.getElementById("level-select");
-const levelTitle = document.getElementById("level-title");
-const levelDesc = document.getElementById("level-desc");
-const levelConstraintsList = document.getElementById("level-constraints-list");
+const gridBoard = typeof document !== 'undefined' ? document.getElementById("grid-board") : null;
+const gridWrapper = typeof document !== 'undefined' ? document.getElementById("grid-wrapper") : null;
+const placedBlocksContainer = typeof document !== 'undefined' ? document.getElementById("placed-blocks-container") : null;
+const blocksShelf = typeof document !== 'undefined' ? document.getElementById("blocks-shelf") : null;
+const wiringOverlay = typeof document !== 'undefined' ? document.getElementById("wiring-overlay") : null;
+const levelSelect = typeof document !== 'undefined' ? document.getElementById("level-select") : null;
+const levelTitle = typeof document !== 'undefined' ? document.getElementById("level-title") : null;
+const levelDesc = typeof document !== 'undefined' ? document.getElementById("level-desc") : null;
+const levelConstraintsList = typeof document !== 'undefined' ? document.getElementById("level-constraints-list") : null;
 
 // Stats DOM
-const statTotalCost = document.getElementById("stat-total-cost");
-const statValid = document.getElementById("stat-valid");
-const statOverlaps = document.getElementById("stat-overlaps");
-const statWirelength = document.getElementById("stat-wirelength");
+const statTotalCost = typeof document !== 'undefined' ? document.getElementById("stat-total-cost") : null;
+const statValid = typeof document !== 'undefined' ? document.getElementById("stat-valid") : null;
+const statOverlaps = typeof document !== 'undefined' ? document.getElementById("stat-overlaps") : null;
+const statWirelength = typeof document !== 'undefined' ? document.getElementById("stat-wirelength") : null;
 
 // Inputs DOM
-const inputLambdaAlloc = document.getElementById("lambda-alloc");
-const inputLambdaOverlap = document.getElementById("lambda-overlap");
-const inputLambdaDist = document.getElementById("lambda-dist");
-const valLambdaAlloc = document.getElementById("val-lambda-alloc");
-const valLambdaOverlap = document.getElementById("val-lambda-overlap");
-const valLambdaDist = document.getElementById("val-lambda-dist");
+const inputLambdaAlloc = typeof document !== 'undefined' ? document.getElementById("lambda-alloc") : null;
+const inputLambdaOverlap = typeof document !== 'undefined' ? document.getElementById("lambda-overlap") : null;
+const inputLambdaDist = typeof document !== 'undefined' ? document.getElementById("lambda-dist") : null;
+const valLambdaAlloc = typeof document !== 'undefined' ? document.getElementById("val-lambda-alloc") : null;
+const valLambdaOverlap = typeof document !== 'undefined' ? document.getElementById("val-lambda-overlap") : null;
+const valLambdaDist = typeof document !== 'undefined' ? document.getElementById("val-lambda-dist") : null;
 
-const btnReset = document.getElementById("btn-reset");
-const btnExport = document.getElementById("btn-export");
-const doutoradoComparison = document.getElementById("doutorado-comparison");
-const compManual = document.getElementById("comp-manual");
+const btnReset = typeof document !== 'undefined' ? document.getElementById("btn-reset") : null;
+const btnExport = typeof document !== 'undefined' ? document.getElementById("btn-export") : null;
+const doutoradoComparison = typeof document !== 'undefined' ? document.getElementById("doutorado-comparison") : null;
+const compManual = typeof document !== 'undefined' ? document.getElementById("comp-manual") : null;
+
+// Password & SA DOM Elements
+let isOptimizerUnlocked = false;
+const PASSWORD_REQUIRED = "riscv";
+
+const btnSaSolve = typeof document !== 'undefined' ? document.getElementById("btn-sa-solve") : null;
+const passwordModal = typeof document !== 'undefined' ? document.getElementById("password-modal") : null;
+const saPasswordInput = typeof document !== 'undefined' ? document.getElementById("sa-password-input") : null;
+const btnSubmitPassword = typeof document !== 'undefined' ? document.getElementById("btn-submit-password") : null;
+const btnCancelPassword = typeof document !== 'undefined' ? document.getElementById("btn-cancel-password") : null;
 
 // 3. Inicialização
 function init() {
@@ -219,6 +229,34 @@ function setupEventListeners() {
 
   btnExport.addEventListener("click", exportLayout);
 
+  if (btnSaSolve) {
+    btnSaSolve.addEventListener("click", () => {
+      if (isOptimizerUnlocked) {
+        runSimulatedAnnealing();
+      } else {
+        openPasswordModal();
+      }
+    });
+  }
+
+  if (btnSubmitPassword) {
+    btnSubmitPassword.addEventListener("click", handlePasswordSubmit);
+  }
+
+  if (btnCancelPassword) {
+    btnCancelPassword.addEventListener("click", closePasswordModal);
+  }
+
+  if (saPasswordInput) {
+    saPasswordInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        handlePasswordSubmit();
+      } else if (e.key === "Escape") {
+        closePasswordModal();
+      }
+    });
+  }
+
   // Evento global de redimensionamento para ajustar as fiações SVG
   window.addEventListener("resize", () => {
     drawWiring();
@@ -239,54 +277,56 @@ function loadLevel(levelId) {
   gridM = level.M;
   gridN = level.N;
   
-  levelTitle.textContent = level.title;
-  levelDesc.textContent = level.desc;
+  if (levelTitle) levelTitle.textContent = level.title;
+  if (levelDesc) levelDesc.textContent = level.desc;
   
   // Update display of hard constraints in side panel
-  levelConstraintsList.innerHTML = "";
-  let hasRules = false;
-  
-  if (Object.keys(level.fixed_positions).length > 0) {
-    hasRules = true;
-    for (let bid in level.fixed_positions) {
-      let pos = level.fixed_positions[bid];
-      let li = document.createElement("li");
-      li.innerHTML = typeof I18N !== 'undefined' ? I18N.messages.fixedBlock(bid, pos[0], pos[1]) : `Block <b>${bid}</b> fixed at position <b>(${pos[0]}, ${pos[1]})</b>.`;
-      levelConstraintsList.appendChild(li);
+  if (levelConstraintsList) {
+    levelConstraintsList.innerHTML = "";
+    let hasRules = false;
+    
+    if (Object.keys(level.fixed_positions).length > 0) {
+      hasRules = true;
+      for (let bid in level.fixed_positions) {
+        let pos = level.fixed_positions[bid];
+        let li = document.createElement("li");
+        li.innerHTML = typeof I18N !== 'undefined' ? I18N.messages.fixedBlock(bid, pos[0], pos[1]) : `Block <b>${bid}</b> fixed at position <b>(${pos[0]}, ${pos[1]})</b>.`;
+        levelConstraintsList.appendChild(li);
+      }
     }
-  }
-  
-  if (Object.keys(level.boundary_constraints).length > 0) {
-    hasRules = true;
-    for (let bid in level.boundary_constraints) {
-      let bnd = level.boundary_constraints[bid];
-      let bndName = (typeof I18N !== 'undefined' && I18N.boundaries[bnd]) ? I18N.boundaries[bnd] : (bnd === 'N' ? 'North (Top)' : bnd === 'S' ? 'South (Bottom)' : bnd === 'W' ? 'West (Left)' : 'East (Right)');
-      let li = document.createElement("li");
-      li.innerHTML = typeof I18N !== 'undefined' ? I18N.messages.boundaryRestricted(bid, bndName) : `Block <b>${bid}</b> restricted to boundary <b>${bndName}</b>.`;
-      levelConstraintsList.appendChild(li);
+    
+    if (Object.keys(level.boundary_constraints).length > 0) {
+      hasRules = true;
+      for (let bid in level.boundary_constraints) {
+        let bnd = level.boundary_constraints[bid];
+        let bndName = (typeof I18N !== 'undefined' && I18N.boundaries[bnd]) ? I18N.boundaries[bnd] : (bnd === 'N' ? 'North (Top)' : bnd === 'S' ? 'South (Bottom)' : bnd === 'W' ? 'West (Left)' : 'East (Right)');
+        let li = document.createElement("li");
+        li.innerHTML = typeof I18N !== 'undefined' ? I18N.messages.boundaryRestricted(bid, bndName) : `Block <b>${bid}</b> restricted to boundary <b>${bndName}</b>.`;
+        levelConstraintsList.appendChild(li);
+      }
     }
-  }
 
-  if (levelId === 2) {
-    let li = document.createElement("li");
-    li.innerHTML = typeof I18N !== 'undefined' ? I18N.messages.rotationDisabled : `Block rotation <b>disabled</b> for this test case.`;
-    levelConstraintsList.appendChild(li);
-  }
-  
-  if (!hasRules) {
-    let li = document.createElement("li");
-    li.textContent = typeof I18N !== 'undefined' ? I18N.messages.noHardConstraints : "No initial spatial hard constraints.";
-    levelConstraintsList.appendChild(li);
+    if (levelId === 2) {
+      let li = document.createElement("li");
+      li.innerHTML = typeof I18N !== 'undefined' ? I18N.messages.rotationDisabled : `Block rotation <b>disabled</b> for this test case.`;
+      levelConstraintsList.appendChild(li);
+    }
+    
+    if (!hasRules) {
+      let li = document.createElement("li");
+      li.textContent = typeof I18N !== 'undefined' ? I18N.messages.noHardConstraints : "No initial spatial hard constraints.";
+      levelConstraintsList.appendChild(li);
+    }
   }
 
   // Display PhD benchmarks for Level 2
-  if (levelId === 2) {
-    doutoradoComparison.style.display = "block";
-  } else {
-    doutoradoComparison.style.display = "none";
+  if (doutoradoComparison) {
+    if (levelId === 2) {
+      doutoradoComparison.style.display = "block";
+    } else {
+      doutoradoComparison.style.display = "none";
+    }
   }
-
-
 
   // Reset parameters to level default values if Level 2
   if (levelId === 2) {
@@ -294,13 +334,13 @@ function loadLevel(levelId) {
     lambdaOverlap = 50.0;
     lambdaDist = 5.0;
     
-    inputLambdaAlloc.value = 50;
-    inputLambdaOverlap.value = 50;
-    inputLambdaDist.value = 5;
+    if (inputLambdaAlloc) inputLambdaAlloc.value = 50;
+    if (inputLambdaOverlap) inputLambdaOverlap.value = 50;
+    if (inputLambdaDist) inputLambdaDist.value = 5;
     
-    valLambdaAlloc.textContent = "50.0";
-    valLambdaOverlap.textContent = "50.0";
-    valLambdaDist.textContent = "5.0";
+    if (valLambdaAlloc) valLambdaAlloc.textContent = "50.0";
+    if (valLambdaOverlap) valLambdaOverlap.textContent = "50.0";
+    if (valLambdaDist) valLambdaDist.textContent = "5.0";
   }
 
   // Initialize blocks data structure
@@ -413,6 +453,7 @@ function generateQubitMap() {
 
 // 6. Renderizadores Visuais
 function renderGrid() {
+  if (!gridBoard || !gridWrapper) return;
   gridBoard.innerHTML = "";
   gridBoard.style.gridTemplateRows = `repeat(${gridM}, 70px)`;
   gridBoard.style.gridTemplateColumns = `repeat(${gridN}, 70px)`;
@@ -439,6 +480,7 @@ function renderGrid() {
 }
 
 function renderShelfAndPlaced() {
+  if (!blocksShelf || !placedBlocksContainer) return;
   // Limpar containers
   blocksShelf.innerHTML = "";
   placedBlocksContainer.innerHTML = "";
@@ -968,42 +1010,48 @@ function updateStatsAndWiring() {
   }
 
   // Atualizar DOM
-  statTotalCost.textContent = cost.toFixed(2);
+  if (statTotalCost) statTotalCost.textContent = cost.toFixed(2);
   
-  if (valid) {
-    statValid.textContent = typeof I18N !== 'undefined' ? I18N.messages.yes : "Yes";
-    statValid.className = "stat-value valid";
-  } else {
-    statValid.textContent = typeof I18N !== 'undefined' ? I18N.messages.no : "No";
-    statValid.className = "stat-value invalid";
+  if (statValid) {
+    if (valid) {
+      statValid.textContent = typeof I18N !== 'undefined' ? I18N.messages.yes : "Yes";
+      statValid.className = "stat-value valid";
+    } else {
+      statValid.textContent = typeof I18N !== 'undefined' ? I18N.messages.no : "No";
+      statValid.className = "stat-value invalid";
+    }
   }
   
-  statOverlaps.textContent = overlaps;
-  if (overlaps > 0) {
-    statOverlaps.className = "stat-value invalid";
-  } else {
-    statOverlaps.className = "stat-value warning"; // 0 but invalid if not all placed
+  if (statOverlaps) {
+    statOverlaps.textContent = overlaps;
+    if (overlaps > 0) {
+      statOverlaps.className = "stat-value invalid";
+    } else {
+      statOverlaps.className = "stat-value warning"; // 0 mas inválido se não colocou todos
+    }
   }
   
-  statWirelength.textContent = totalWire.toFixed(2);
+  if (statWirelength) statWirelength.textContent = totalWire.toFixed(2);
 
   // Update PhD Benchmark comparison
   if (currentLevelId === 2) {
     const optCost = 22.0 * lambdaDist;
-    document.getElementById("comp-qaoa").textContent = optCost.toFixed(2);
-    document.getElementById("comp-sa").textContent = optCost.toFixed(2);
-    compManual.textContent = cost.toFixed(2);
+    const compQaoa = typeof document !== 'undefined' ? document.getElementById("comp-qaoa") : null;
+    const compSa = typeof document !== 'undefined' ? document.getElementById("comp-sa") : null;
+    if (compQaoa) compQaoa.textContent = optCost.toFixed(2);
+    if (compSa) compSa.textContent = optCost.toFixed(2);
+    if (compManual) compManual.textContent = cost.toFixed(2);
     
     if (valid && Math.abs(cost - optCost) < 1e-2) {
-      compManual.style.color = "var(--success)";
-      if (!window.showedLevel2Success) {
+      if (compManual) compManual.style.color = "var(--success)";
+      if (typeof window !== 'undefined' && !window.showedLevel2Success) {
         const msg = typeof I18N !== 'undefined' ? I18N.messages.phdSuccessToast : "Congratulations! You found the optimal classical/quantum layout for the PhD benchmark!";
         showToast(msg, "success");
         window.showedLevel2Success = true;
       }
     } else {
-      compManual.style.color = "var(--text-main)";
-      window.showedLevel2Success = false;
+      if (compManual) compManual.style.color = "var(--text-main)";
+      if (typeof window !== 'undefined') window.showedLevel2Success = false;
     }
   }
 
@@ -1012,6 +1060,7 @@ function updateStatsAndWiring() {
 }
 
 function drawWiring() {
+  if (!wiringOverlay) return;
   wiringOverlay.innerHTML = "";
   
   const placedList = Object.values(blocks).filter(b => b.placed);
@@ -1108,9 +1157,251 @@ document.head.appendChild(styleSheet);
 
 
 
+// 10. Controle de Senha & Modal do Otimizador
+function openPasswordModal() {
+  if (!passwordModal) return;
+  passwordModal.classList.add("active");
+  passwordModal.setAttribute("aria-hidden", "false");
+  if (saPasswordInput) {
+    saPasswordInput.value = "";
+    saPasswordInput.focus();
+  }
+}
+
+function closePasswordModal() {
+  if (!passwordModal) return;
+  passwordModal.classList.remove("active");
+  passwordModal.setAttribute("aria-hidden", "true");
+}
+
+function checkOptimizerPassword(input) {
+  if (!input || typeof input !== 'string') return false;
+  return input.trim().toLowerCase() === PASSWORD_REQUIRED;
+}
+
+function handlePasswordSubmit() {
+  const entered = saPasswordInput ? saPasswordInput.value : "";
+  if (checkOptimizerPassword(entered)) {
+    isOptimizerUnlocked = true;
+    closePasswordModal();
+    const msg = typeof I18N !== 'undefined' && I18N.messages.passwordSuccessToast ? I18N.messages.passwordSuccessToast : "Access granted! Running Simulated Annealing...";
+    showToast(msg, "success");
+    runSimulatedAnnealing();
+  } else {
+    const msg = typeof I18N !== 'undefined' && I18N.messages.passwordErrorToast ? I18N.messages.passwordErrorToast : "Incorrect password! Access denied.";
+    showToast(msg, "error");
+    if (saPasswordInput) {
+      saPasswordInput.value = "";
+      saPasswordInput.focus();
+    }
+  }
+}
+
+// 11. Motor de Otimização Combinatória: Simulated Annealing (SA)
+function runSimulatedAnnealing(levelId = currentLevelId) {
+  const level = LEVELS[levelId];
+  if (!level) return null;
+
+  // 1. Identificar blocos livres e seus domínios de posições/rotações válidas
+  const unfixedBlockIds = [];
+  const candidateDomains = {};
+
+  for (let bid in blocks) {
+    const b = blocks[bid];
+    const bidInt = parseInt(bid);
+
+    if (b.fixed) {
+      continue; // Bloco fixo mantém sua alocação espacial
+    }
+
+    unfixedBlockIds.push(bidInt);
+
+    const W_orig = level.block_sizes[bidInt][0];
+    const H_orig = level.block_sizes[bidInt][1];
+    const candidateList = [];
+
+    const allowedRotations = (level.allow_rotation && W_orig !== H_orig) ? [0, 1] : [0];
+
+    for (let rot of allowedRotations) {
+      const W = rot === 0 ? W_orig : H_orig;
+      const H = rot === 0 ? H_orig : W_orig;
+
+      const max_m = gridM - H;
+      const max_n = gridN - W;
+
+      for (let m = 0; m <= max_m; m++) {
+        for (let n = 0; n <= max_n; n++) {
+          if (b.boundary) {
+            const is_north = (m === 0);
+            const is_south = (m === gridM - H);
+            const is_west = (n === 0);
+            const is_east = (n === gridN - W);
+
+            let valid = false;
+            if (b.boundary === 'N' && is_north) valid = true;
+            else if (b.boundary === 'S' && is_south) valid = true;
+            else if (b.boundary === 'W' && is_west) valid = true;
+            else if (b.boundary === 'E' && is_east) valid = true;
+            else if (b.boundary === 'any' && (is_north || is_south || is_west || is_east)) valid = true;
+
+            if (!valid) continue;
+          }
+
+          candidateList.push({ m, n, rot, W, H });
+        }
+      }
+    }
+
+    if (candidateList.length === 0) {
+      for (let rot of allowedRotations) {
+        const W = rot === 0 ? W_orig : H_orig;
+        const H = rot === 0 ? H_orig : W_orig;
+        for (let m = 0; m <= gridM - H; m++) {
+          for (let n = 0; n <= gridN - W; n++) {
+            candidateList.push({ m, n, rot, W, H });
+          }
+        }
+      }
+    }
+
+    candidateDomains[bidInt] = candidateList;
+  }
+
+  // Avalia o custo do estado atual
+  function evaluateState(state) {
+    for (let bidInt of unfixedBlockIds) {
+      const pos = state[bidInt];
+      blocks[bidInt].placed = true;
+      blocks[bidInt].m = pos.m;
+      blocks[bidInt].n = pos.n;
+      blocks[bidInt].rot = pos.rot;
+      blocks[bidInt].W = pos.W;
+      blocks[bidInt].H = pos.H;
+    }
+
+    const x = getCurrentBinaryVector();
+    let cost = calculateExactQUBOCost(x);
+    const overlaps = countOverlappingCells();
+    if (overlaps > 0) {
+      cost += overlaps * 500.0;
+    }
+    return cost;
+  }
+
+  function cloneState(state) {
+    const copy = {};
+    for (let bidInt of unfixedBlockIds) {
+      copy[bidInt] = { ...state[bidInt] };
+    }
+    return copy;
+  }
+
+  // 2. Inicializar estado atual com posições válidas aleatórias
+  let currentState = {};
+  for (let bidInt of unfixedBlockIds) {
+    const domain = candidateDomains[bidInt];
+    const randomIndex = Math.floor(Math.random() * domain.length);
+    currentState[bidInt] = { ...domain[randomIndex] };
+  }
+
+  let currentEnergy = evaluateState(currentState);
+  let bestState = cloneState(currentState);
+  let bestEnergy = currentEnergy;
+  let bestValid = checkValidity();
+
+  // 3. Loop do Simulated Annealing
+  let temp = 100.0;
+  const minTemp = 0.001;
+  const coolingRate = 0.96;
+  const stepsPerTemp = 40;
+
+  while (temp > minTemp) {
+    for (let step = 0; step < stepsPerTemp; step++) {
+      if (unfixedBlockIds.length === 0) break;
+
+      const nextState = cloneState(currentState);
+      const randMove = Math.random();
+
+      if (randMove < 0.8 || unfixedBlockIds.length < 2) {
+        const randomBid = unfixedBlockIds[Math.floor(Math.random() * unfixedBlockIds.length)];
+        const domain = candidateDomains[randomBid];
+        const randomPos = domain[Math.floor(Math.random() * domain.length)];
+        nextState[randomBid] = { ...randomPos };
+      } else {
+        const idx1 = Math.floor(Math.random() * unfixedBlockIds.length);
+        let idx2 = Math.floor(Math.random() * unfixedBlockIds.length);
+        while (idx1 === idx2) {
+          idx2 = Math.floor(Math.random() * unfixedBlockIds.length);
+        }
+        const b1 = unfixedBlockIds[idx1];
+        const b2 = unfixedBlockIds[idx2];
+
+        const pos1 = nextState[b1];
+        const pos2 = nextState[b2];
+
+        const b1_fits_in_pos2 = (pos2.m + pos1.H <= gridM && pos2.n + pos1.W <= gridN);
+        const b2_fits_in_pos1 = (pos1.m + pos2.H <= gridM && pos1.n + pos2.W <= gridN);
+
+        if (b1_fits_in_pos2 && b2_fits_in_pos1) {
+          nextState[b1] = { m: pos2.m, n: pos2.n, rot: pos1.rot, W: pos1.W, H: pos1.H };
+          nextState[b2] = { m: pos1.m, n: pos1.n, rot: pos2.rot, W: pos2.W, H: pos2.H };
+        } else {
+          const domain = candidateDomains[b1];
+          nextState[b1] = { ...domain[Math.floor(Math.random() * domain.length)] };
+        }
+      }
+
+      const nextEnergy = evaluateState(nextState);
+      const deltaE = nextEnergy - currentEnergy;
+
+      if (deltaE < 0 || Math.random() < Math.exp(-deltaE / temp)) {
+        currentState = nextState;
+        currentEnergy = nextEnergy;
+
+        const isValid = checkValidity();
+        if ((isValid && !bestValid) || (isValid === bestValid && currentEnergy < bestEnergy)) {
+          bestState = cloneState(currentState);
+          bestEnergy = currentEnergy;
+          bestValid = isValid;
+        }
+      }
+    }
+
+    temp *= coolingRate;
+  }
+
+  // 4. Restaurar melhor estado no jogo
+  for (let bidInt of unfixedBlockIds) {
+    const pos = bestState[bidInt];
+    blocks[bidInt].placed = true;
+    blocks[bidInt].m = pos.m;
+    blocks[bidInt].n = pos.n;
+    blocks[bidInt].rot = pos.rot;
+    blocks[bidInt].W = pos.W;
+    blocks[bidInt].H = pos.H;
+  }
+
+  renderShelfAndPlaced();
+  updateStatsAndWiring();
+
+  const finalCost = calculateExactQUBOCost(getCurrentBinaryVector());
+  if (typeof I18N !== 'undefined' && I18N.messages.saSuccessToast) {
+    showToast(I18N.messages.saSuccessToast(finalCost), bestValid ? "success" : "warning");
+  } else {
+    showToast(`Simulated Annealing finished! Best cost: ${finalCost.toFixed(2)}`, "success");
+  }
+
+  return {
+    bestState,
+    bestEnergy: finalCost,
+    valid: bestValid
+  };
+}
+
 // 12. Utilitários (Toast & Export)
 function showToast(msg, type = "info") {
   const toast = document.getElementById("toast");
+  if (!toast) return;
   toast.textContent = msg;
   toast.className = `toast show ${type}`;
   
@@ -1152,7 +1443,6 @@ function exportLayout() {
       showToast(msg, "success");
       console.log("Layout Exported:\n", jsonStr);
     }).catch(() => {
-      // Fallback if clipboard API fails
       if (typeof Blob !== 'undefined' && typeof URL !== 'undefined') {
         const blob = new Blob([jsonStr], { type: "application/json" });
         const url = URL.createObjectURL(blob);
@@ -1178,6 +1468,8 @@ if (typeof module !== 'undefined' && module.exports) {
     calculateExactQUBOCost,
     checkValidity,
     countOverlappingCells,
-    generateQubitMap
+    generateQubitMap,
+    checkOptimizerPassword,
+    runSimulatedAnnealing
   };
 }

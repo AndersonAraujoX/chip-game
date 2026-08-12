@@ -131,3 +131,38 @@ test.describe('Game Levels Configuration (English Verification)', () => {
     assert.throws(() => inspectLevel({ id: 99 }), /Invalid level configuration schema/);
   });
 });
+
+test.describe('Simulated Annealing & Password Security Module', () => {
+  const { checkOptimizerPassword, runSimulatedAnnealing } = require('./script.js');
+
+  test.it('AAA - Password Security: Validates "riscv" password correctly (case-insensitive & trimmed)', () => {
+    // Arrange & Act & Assert
+    assert.strictEqual(checkOptimizerPassword('riscv'), true);
+    assert.strictEqual(checkOptimizerPassword('RISCV'), true);
+    assert.strictEqual(checkOptimizerPassword('  riscv  '), true);
+    assert.strictEqual(checkOptimizerPassword('wrong_password'), false);
+    assert.strictEqual(checkOptimizerPassword('1234'), false);
+    assert.strictEqual(checkOptimizerPassword(''), false);
+    assert.strictEqual(checkOptimizerPassword(null), false);
+  });
+
+  test.it('AAA - Simulated Annealing Engine: Finds valid solution for Level 2 (PhD Benchmark)', () => {
+    // Act
+    const result = runSimulatedAnnealing(2);
+
+    // Assert
+    assert.ok(result, 'Result should not be null');
+    assert.strictEqual(result.valid, true, 'SA solution should be valid with 0 overlaps and boundary constraints satisfied');
+    assert.ok(result.bestEnergy <= 15.0, 'SA best cost for Level 2 should be close to optimal 13.50');
+  });
+
+  test.it('AAA - Simulated Annealing Engine: Finds valid solution for Level 1', () => {
+    // Act
+    const result = runSimulatedAnnealing(1);
+
+    // Assert
+    assert.ok(result, 'Result should not be null');
+    assert.strictEqual(result.valid, true, 'SA solution for Level 1 should be valid');
+  });
+});
+

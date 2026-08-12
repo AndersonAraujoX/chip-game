@@ -42,7 +42,18 @@ const I18N = {
     yes: "Yes",
     no: "No",
     rotateTooltip: "Rotate 90 degrees (Keyboard: R)",
-    boundaryTag: (bnd) => `Boundary: ${bnd}`
+    boundaryTag: (bnd) => `Boundary: ${bnd}`,
+    saButton: "⚡ Simulated Annealing",
+    saTooltip: "Run Simulated Annealing Optimizer (Password Required)",
+    passwordPromptTitle: "🔒 Optimizer Security",
+    passwordPromptDesc: "Enter password to access Simulated Annealing optimizer:",
+    passwordPlaceholder: "Password...",
+    passwordErrorToast: "Incorrect password! Access denied.",
+    passwordSuccessToast: "Access granted! Running Simulated Annealing...",
+    saRunningToast: "Running Simulated Annealing optimization...",
+    saSuccessToast: (cost) => `Simulated Annealing completed! Best cost: ${cost.toFixed(2)}`,
+    cancel: "Cancel",
+    confirm: "Unlock & Optimize"
   }
 };
 

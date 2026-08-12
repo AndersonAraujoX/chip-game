@@ -77,6 +77,7 @@
       </div>
 
       <div class="controls-actions">
+        <button id="btn-sa-solve" class="btn btn-optimizer" title="Run Simulated Annealing Optimizer (Password Required)">⚡ Simulated Annealing</button>
         <button id="btn-reset" class="btn btn-secondary">🔄 Reset Layout</button>
       </div>
     </section>
@@ -163,6 +164,24 @@
   <footer>
     Developed as an auxiliary Floorplanning tool | Classical Combinatorial Optimization (Simulated Annealing) &amp; Quantum Computing (QAOA / Ising)
   </footer>
+
+  <!-- Password Modal for Optimizer -->
+  <div id="password-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-container">
+      <div class="modal-header">
+        <span style="font-size: 20px;">🔐</span>
+        <div class="modal-title" id="modal-title-text">Optimizer Security</div>
+      </div>
+      <div class="modal-body">
+        <p id="modal-desc-text" style="font-size: 13px; color: var(--text-muted);">Enter password to access Simulated Annealing optimizer:</p>
+        <input type="password" id="sa-password-input" class="modal-input" placeholder="Password..." autocomplete="off">
+      </div>
+      <div class="modal-actions">
+        <button id="btn-cancel-password" class="btn btn-secondary" style="padding: 6px 14px; font-size: 13px;">Cancel</button>
+        <button id="btn-submit-password" class="btn btn-primary" style="padding: 6px 14px; font-size: 13px;">Unlock &amp; Optimize</button>
+      </div>
+    </div>
+  </div>
 
   <script src="i18n.js"></script>
   <script src="script.js"></script>
