@@ -97,6 +97,17 @@
         </div>
       </div>
       
+      <!-- Real-Time Simulated Annealing Progress Bar -->
+      <div id="sa-progress-bar" class="sa-progress" style="display: none;">
+        <div class="sa-progress-info">
+          <span>⚡ Simulated Annealing: <strong id="sa-temp-display" style="color: var(--accent-cyan);">T = 100.0</strong></span>
+          <span>Best Cost: <strong id="sa-cost-display" style="color: var(--success);">--</strong></span>
+        </div>
+        <div class="sa-progress-track">
+          <div class="sa-progress-fill" id="sa-progress-fill"></div>
+        </div>
+      </div>
+
       <div style="margin-top: 15px; font-size: 12px; color: var(--text-muted); text-align: center;">
         <span style="color: var(--accent-cyan); font-weight: bold;">Instructions:</span> Drag blocks from the right panel onto the grid. Press <kbd style="background:#1e293b; padding: 2px 5px; border-radius: 4px; border:1px solid var(--border-glass);">R</kbd> or double-click a block to rotate 90°.
       </div>

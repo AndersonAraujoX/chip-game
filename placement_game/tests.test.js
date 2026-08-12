@@ -146,9 +146,9 @@ test.describe('Simulated Annealing & Password Security Module', () => {
     assert.strictEqual(checkOptimizerPassword(null), false);
   });
 
-  test.it('AAA - Simulated Annealing Engine: Finds valid solution for Level 2 (PhD Benchmark)', () => {
+  test.it('AAA - Simulated Annealing Engine: Finds valid solution for Level 2 (PhD Benchmark)', async () => {
     // Act
-    const result = runSimulatedAnnealing(2);
+    const result = await runSimulatedAnnealing(2);
 
     // Assert
     assert.ok(result, 'Result should not be null');
@@ -156,9 +156,9 @@ test.describe('Simulated Annealing & Password Security Module', () => {
     assert.ok(result.bestEnergy <= 15.0, 'SA best cost for Level 2 should be close to optimal 13.50');
   });
 
-  test.it('AAA - Simulated Annealing Engine: Finds valid solution for Level 1', () => {
+  test.it('AAA - Simulated Annealing Engine: Finds valid solution for Level 1', async () => {
     // Act
-    const result = runSimulatedAnnealing(1);
+    const result = await runSimulatedAnnealing(1);
 
     // Assert
     assert.ok(result, 'Result should not be null');

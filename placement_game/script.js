@@ -1197,10 +1197,18 @@ function handlePasswordSubmit() {
   }
 }
 
-// 11. Motor de Otimização Combinatória: Simulated Annealing (SA)
-function runSimulatedAnnealing(levelId = currentLevelId) {
+// 11. Motor de Otimização Combinatória: Simulated Annealing (SA) em Tempo Real
+async function runSimulatedAnnealing(levelId = currentLevelId) {
   const level = LEVELS[levelId];
   if (!level) return null;
+
+  // Exibir barra de progresso em tempo real se na web
+  const saProgressBar = typeof document !== 'undefined' ? document.getElementById("sa-progress-bar") : null;
+  const saTempDisplay = typeof document !== 'undefined' ? document.getElementById("sa-temp-display") : null;
+  const saCostDisplay = typeof document !== 'undefined' ? document.getElementById("sa-cost-display") : null;
+  const saProgressFill = typeof document !== 'undefined' ? document.getElementById("sa-progress-fill") : null;
+
+  if (saProgressBar) saProgressBar.style.display = "flex";
 
   // 1. Identificar blocos livres e seus domínios de posições/rotações válidas
   const unfixedBlockIds = [];
@@ -1267,25 +1275,82 @@ function runSimulatedAnnealing(levelId = currentLevelId) {
     candidateDomains[bidInt] = candidateList;
   }
 
-  // Avalia o custo do estado atual
+  // Avalia o custo do estado atual de forma ultrarrápida (física direta O(N^2) em vez de QUBO O(Q^2))
   function evaluateState(state) {
+    const grid = Array.from({ length: gridM }, () => new Array(gridN).fill(0));
+    
+    // Contagem de células para sobreposição
     for (let bidInt of unfixedBlockIds) {
       const pos = state[bidInt];
-      blocks[bidInt].placed = true;
-      blocks[bidInt].m = pos.m;
-      blocks[bidInt].n = pos.n;
-      blocks[bidInt].rot = pos.rot;
-      blocks[bidInt].W = pos.W;
-      blocks[bidInt].H = pos.H;
+      for (let r = pos.m; r < pos.m + pos.H; r++) {
+        for (let c = pos.n; c < pos.n + pos.W; c++) {
+          if (r >= 0 && r < gridM && c >= 0 && c < gridN) {
+            grid[r][c]++;
+          }
+        }
+      }
     }
 
-    const x = getCurrentBinaryVector();
-    let cost = calculateExactQUBOCost(x);
-    const overlaps = countOverlappingCells();
-    if (overlaps > 0) {
-      cost += overlaps * 500.0;
+    for (let bid in blocks) {
+      if (blocks[bid].fixed) {
+        const b = blocks[bid];
+        for (let r = b.m; r < b.m + b.H; r++) {
+          for (let c = b.n; c < b.n + b.W; c++) {
+            if (r >= 0 && r < gridM && c >= 0 && c < gridN) {
+              grid[r][c]++;
+            }
+          }
+        }
+      }
     }
-    return cost;
+
+    let cellOverlaps = 0;
+    for (let r = 0; r < gridM; r++) {
+      for (let c = 0; c < gridN; c++) {
+        if (grid[r][c] > 1) {
+          cellOverlaps += (grid[r][c] - 1);
+        }
+      }
+    }
+
+    // Comprimento de fiação (distância Manhattan entre centros)
+    let distCost = 0;
+    const allBids = Object.keys(blocks).map(Number);
+
+    for (let i = 0; i < allBids.length; i++) {
+      const b1Id = allBids[i];
+      const pos1 = blocks[b1Id].fixed ? blocks[b1Id] : state[b1Id];
+      if (!pos1) continue;
+
+      const cy1 = pos1.m + (pos1.H - 1) / 2.0;
+      const cx1 = pos1.n + (pos1.W - 1) / 2.0;
+
+      for (let j = i + 1; j < allBids.length; j++) {
+        const b2Id = allBids[j];
+        const pos2 = blocks[b2Id].fixed ? blocks[b2Id] : state[b2Id];
+        if (!pos2) continue;
+
+        const cy2 = pos2.m + (pos2.H - 1) / 2.0;
+        const cx2 = pos2.n + (pos2.W - 1) / 2.0;
+
+        const d_ij = Math.abs(cy1 - cy2) + Math.abs(cx1 - cx2);
+
+        const key1 = `${b1Id}-${b2Id}`;
+        const key2 = `${b2Id}-${b1Id}`;
+        let weight = 0;
+        if (levelId === 2) {
+          weight = lambdaDist;
+        } else {
+          const affinity = level.proximity_affinity[key1] || level.proximity_affinity[key2] || 0.0;
+          if (affinity > 0 || levelId === 1) {
+            weight = lambdaDist + affinity;
+          }
+        }
+        distCost += weight * d_ij;
+      }
+    }
+
+    return distCost + (lambdaOverlap * cellOverlaps) + (cellOverlaps * 500.0);
   }
 
   function cloneState(state) {
@@ -1309,11 +1374,17 @@ function runSimulatedAnnealing(levelId = currentLevelId) {
   let bestEnergy = currentEnergy;
   let bestValid = checkValidity();
 
-  // 3. Loop do Simulated Annealing
+  // 3. Loop do Simulated Annealing com Animação em Tempo Real
   let temp = 100.0;
   const minTemp = 0.001;
-  const coolingRate = 0.96;
-  const stepsPerTemp = 40;
+  const coolingRate = 0.95;
+  const stepsPerTemp = 30;
+
+  const initialLogT = Math.log(100.0);
+  const minLogT = Math.log(0.001);
+  const totalLogRange = initialLogT - minLogT;
+
+  let iterCount = 0;
 
   while (temp > minTemp) {
     for (let step = 0; step < stepsPerTemp; step++) {
@@ -1367,6 +1438,33 @@ function runSimulatedAnnealing(levelId = currentLevelId) {
       }
     }
 
+    iterCount++;
+    // A cada 3 passos de temperatura, atualiza a animação visual em tempo real no navegador
+    if (iterCount % 3 === 0 && typeof document !== 'undefined') {
+      const currentLogRange = initialLogT - Math.log(Math.max(temp, 0.001));
+      const progressPct = Math.min(100, Math.max(0, (currentLogRange / totalLogRange) * 100));
+
+      if (saTempDisplay) saTempDisplay.textContent = `T = ${temp.toFixed(1)}`;
+      if (saCostDisplay) saCostDisplay.textContent = bestEnergy.toFixed(2);
+      if (saProgressFill) saProgressFill.style.width = `${progressPct.toFixed(1)}%`;
+
+      // Atualiza a posição dos blocos na grade em tempo real
+      for (let bidInt of unfixedBlockIds) {
+        const pos = currentState[bidInt];
+        blocks[bidInt].placed = true;
+        blocks[bidInt].m = pos.m;
+        blocks[bidInt].n = pos.n;
+        blocks[bidInt].rot = pos.rot;
+        blocks[bidInt].W = pos.W;
+        blocks[bidInt].H = pos.H;
+      }
+      renderShelfAndPlaced();
+      updateStatsAndWiring();
+
+      // Yield frame para renderização no navegador (20ms)
+      await new Promise(r => setTimeout(r, 20));
+    }
+
     temp *= coolingRate;
   }
 
@@ -1383,6 +1481,8 @@ function runSimulatedAnnealing(levelId = currentLevelId) {
 
   renderShelfAndPlaced();
   updateStatsAndWiring();
+
+  if (saProgressBar) saProgressBar.style.display = "none";
 
   const finalCost = calculateExactQUBOCost(getCurrentBinaryVector());
   if (typeof I18N !== 'undefined' && I18N.messages.saSuccessToast) {
