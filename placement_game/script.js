@@ -278,7 +278,6 @@ function loadLevel(levelId) {
   gridN = level.N;
   
   if (levelTitle) levelTitle.textContent = level.title;
-  if (levelDesc) levelDesc.textContent = level.desc;
   
   // Update display of hard constraints in side panel
   if (levelConstraintsList) {
