@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Otimizador de Layout de Chips (Floorplanning)</title>
-  <meta name="description" content="Jogo de arrastar e soltar interativo para otimização de distribuição de blocos em circuitos integrados (floorplanning).">
+  <title>Chip Layout Optimizer (Floorplanning)</title>
+  <meta name="description" content="Interactive drag and drop game for integrated circuit block placement optimization (floorplanning).">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,14 +14,14 @@
 
   <!-- Header -->
   <header>
-    <h1>Otimizador de Layout de Chips <span>Floorplanning</span></h1>
+    <h1>Chip Layout Optimizer <span>Floorplanning</span></h1>
     <div class="level-selector">
-      <label for="level-select" style="font-size: 13px; color: var(--text-muted); margin-right: 8px;">Dificuldade:</label>
+      <label for="level-select" style="font-size: 13px; color: var(--text-muted); margin-right: 8px;">Difficulty:</label>
       <select id="level-select">
-        <option value="1">Nível 1: Introdução (3x3 - 3 Blocos)</option>
-        <option value="2" selected>Nível 2: Doutorado (3x3 - 5 Blocos - 11 Qubits)</option>
-        <option value="3">Nível 3: Intermediário (5x5 - 6 Blocos)</option>
-        <option value="4">Nível 4: Desafio Complexo (8x8 - 10 Blocos)</option>
+        <option value="1">Level 1: Introduction (3x3 - 3 Blocks)</option>
+        <option value="2" selected>Level 2: PhD Benchmark (3x3 - 5 Blocks - 11 Qubits)</option>
+        <option value="3">Level 3: Intermediate (5x5 - 6 Blocks)</option>
+        <option value="4">Level 4: Complex Challenge (8x8 - 10 Blocks)</option>
       </select>
     </div>
   </header>
@@ -29,31 +29,31 @@
   <!-- Main Grid Layout -->
   <main>
     
-    <!-- Sidebar Esquerda: Infos & Configurações -->
-    <section class="panel sidebar-left" aria-label="Painel de Configurações">
+    <!-- Left Sidebar: Info & Settings -->
+    <section class="panel sidebar-left" aria-label="Settings Panel">
       <div class="panel-title">
-        <span>⚙️</span> Configurações do Nível
+        <span>⚙️</span> Level Settings
       </div>
       
       <div class="info-card">
-        <h4 id="level-title">Carregando Nível...</h4>
-        <p id="level-desc">Descrição do nível carregada dinamicamente via JavaScript.</p>
+        <h4 id="level-title">Loading Level...</h4>
+        <p id="level-desc">Level description loaded dynamically via JavaScript.</p>
       </div>
 
       <div class="info-card" id="level-constraints-card">
-        <h4>Regras Específicas:</h4>
+        <h4>Specific Rules:</h4>
         <ul id="level-constraints-list" style="padding-left: 18px; margin-top: 5px; color: var(--text-muted); font-size: 13px;">
-          <!-- Lista de regras preenchida via JS -->
+          <!-- Rule list populated via JS -->
         </ul>
       </div>
 
       <div class="panel-title" style="margin-top: 15px;">
-        <span>⚖️</span> Pesos de Penalidade
+        <span>⚖️</span> Penalty Weights
       </div>
       <div class="parameters-group">
         <div class="parameter-item">
           <div style="display:flex; justify-content:space-between;">
-            <label for="lambda-alloc">Alocação Única (λ_alloc)</label>
+            <label for="lambda-alloc">Single Allocation (λ_alloc)</label>
             <span id="val-lambda-alloc">50.0</span>
           </div>
           <input type="range" id="lambda-alloc" min="10" max="150" step="5" value="50">
@@ -61,7 +61,7 @@
         
         <div class="parameter-item">
           <div style="display:flex; justify-content:space-between;">
-            <label for="lambda-overlap">Colisão/Sobreposição (λ_overlap)</label>
+            <label for="lambda-overlap">Collision/Overlap (λ_overlap)</label>
             <span id="val-lambda-overlap">50.0</span>
           </div>
           <input type="range" id="lambda-overlap" min="10" max="150" step="5" value="50">
@@ -69,7 +69,7 @@
         
         <div class="parameter-item">
           <div style="display:flex; justify-content:space-between;">
-            <label for="lambda-dist">Comprimento de Fio (λ_dist)</label>
+            <label for="lambda-dist">Wire Length (λ_dist)</label>
             <span id="val-lambda-dist">5.0</span>
           </div>
           <input type="range" id="lambda-dist" min="1" max="20" step="0.5" value="5">
@@ -77,63 +77,61 @@
       </div>
 
       <div class="controls-actions">
-        <button id="btn-reset" class="btn btn-secondary">🔄 Resetar Layout</button>
+        <button id="btn-reset" class="btn btn-secondary">🔄 Reset Layout</button>
       </div>
     </section>
 
-    <!-- Centro: Área do Grid de Floorplanning -->
-    <section class="game-center" aria-label="Tabuleiro Grid">
+    <!-- Center: Floorplanning Grid Area -->
+    <section class="game-center" aria-label="Grid Board">
       <div class="grid-outer-container">
         <div class="grid-wrapper" id="grid-wrapper">
-          <!-- O grid em si -->
+          <!-- The grid itself -->
           <div class="grid-board" id="grid-board"></div>
           
-          <!-- Elemento SVG absoluto para conexões/fiações -->
+          <!-- Absolute SVG element for connections/wiring -->
           <svg class="wiring-overlay" id="wiring-overlay"></svg>
           
-          <!-- Elementos absolutos representando blocos colocados (gerados por JS) -->
+          <!-- Absolute elements representing placed blocks (generated by JS) -->
           <div id="placed-blocks-container"></div>
         </div>
       </div>
       
       <div style="margin-top: 15px; font-size: 12px; color: var(--text-muted); text-align: center;">
-        <span style="color: var(--accent-cyan); font-weight: bold;">Instruções:</span> Arraste os blocos do painel direito para o grid. Pressione <kbd style="background:#1e293b; padding: 2px 5px; border-radius: 4px; border:1px solid var(--border-glass);">R</kbd> ou clique duas vezes no bloco para rotacionar 90°.
+        <span style="color: var(--accent-cyan); font-weight: bold;">Instructions:</span> Drag blocks from the right panel onto the grid. Press <kbd style="background:#1e293b; padding: 2px 5px; border-radius: 4px; border:1px solid var(--border-glass);">R</kbd> or double-click a block to rotate 90°.
       </div>
     </section>
 
-    <!-- Sidebar Direita: Estatísticas & Inventário -->
-    <section class="panel sidebar-right" aria-label="Estatísticas e Inventário">
+    <!-- Right Sidebar: Statistics & Inventory -->
+    <section class="panel sidebar-right" aria-label="Statistics and Inventory">
       <div class="panel-title">
-        <span>📊</span> Estatísticas Clássicas
+        <span>📊</span> Classical Statistics
       </div>
       
       <div class="stats-container">
         <div class="stat-box">
-          <span class="stat-label">Custo Total:</span>
+          <span class="stat-label">Total Cost:</span>
           <span class="stat-value cost-highlight" id="stat-total-cost">0.00</span>
         </div>
         <div class="stat-box">
-          <span class="stat-label">Layout Válido:</span>
-          <span class="stat-value invalid" id="stat-valid">Não</span>
+          <span class="stat-label">Valid Layout:</span>
+          <span class="stat-value invalid" id="stat-valid">No</span>
         </div>
         <div class="stat-box">
-          <span class="stat-label">Sobreposições (Células):</span>
+          <span class="stat-label">Overlaps (Cells):</span>
           <span class="stat-value warning" id="stat-overlaps">0</span>
         </div>
         <div class="stat-box">
-          <span class="stat-label">Fiação (Distância Manhattan):</span>
+          <span class="stat-label">Wiring (Manhattan Distance):</span>
           <span class="stat-value" id="stat-wirelength">0.00</span>
         </div>
       </div>
 
-
-
-      <!-- Comparativo com Doutorado (Apenas Nível 2) -->
+      <!-- PhD Benchmark Comparison (Level 2 Only) -->
       <div class="comparison-card" id="doutorado-comparison" style="display: none;">
-        <h4>🏆 Benchmarks (Seu Doutorado):</h4>
+        <h4>🏆 Benchmarks (PhD Benchmark):</h4>
         <div class="comparison-grid">
           <div class="comparison-item">
-            <div class="comparison-label">Manual (Você)</div>
+            <div class="comparison-label">Manual (You)</div>
             <div class="comparison-value" id="comp-manual">-</div>
           </div>
           <div class="comparison-item">
@@ -141,31 +139,33 @@
             <div class="comparison-value" style="color: var(--accent-purple);" id="comp-qaoa">13.50</div>
           </div>
           <div class="comparison-item" style="grid-column: span 2;">
-            <div class="comparison-label">Neal SA (Clássico Ótimo)</div>
+            <div class="comparison-label">Neal SA (Classical Optimum)</div>
             <div class="comparison-value" style="color: var(--success);" id="comp-sa">13.50</div>
           </div>
         </div>
-        <p style="font-size: 9px; color: var(--text-muted); margin-top: 4px; line-height: 1.2;">*Valores com os pesos padrões (λ_alloc=50, λ_overlap=50, λ_dist=5). A solução ótima possui custo ~13.50 com colisões zero e todas as restrições satisfeitas.</p>
+        <p style="font-size: 9px; color: var(--text-muted); margin-top: 4px; line-height: 1.2;">*Values with default weights (λ_alloc=50, λ_overlap=50, λ_dist=5). The optimal solution has a cost of ~13.50 with zero collisions and all constraints satisfied.</p>
       </div>
 
-      <!-- Prateleira de Inventário -->
+      <!-- Inventory Shelf -->
       <div class="panel-title" style="margin-top: 15px; margin-bottom: 8px;">
-        <span>📦</span> Componentes Disponíveis
+        <span>📦</span> Available Components
       </div>
       <div class="blocks-shelf" id="blocks-shelf">
-        <!-- Blocos para arrastar gerados via JS -->
+        <!-- Draggable blocks generated via JS -->
       </div>
 
-      <button id="btn-export" class="btn btn-outline" style="margin-top: auto; padding: 6px 12px; font-size: 12px;">📤 Exportar Layout (JSON)</button>
+      <button id="btn-export" class="btn btn-outline" style="margin-top: auto; padding: 6px 12px; font-size: 12px;">📤 Export Layout (JSON)</button>
     </section>
 
   </main>
 
   <!-- Footer -->
   <footer>
-    Desenvolvido como ferramenta auxiliar de Floorplanning | Otimização Combinatória Clássica (Simulated Annealing) &amp; Computação Quântica (QAOA / Ising)
+    Developed as an auxiliary Floorplanning tool | Classical Combinatorial Optimization (Simulated Annealing) &amp; Quantum Computing (QAOA / Ising)
   </footer>
 
+  <script src="i18n.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
+

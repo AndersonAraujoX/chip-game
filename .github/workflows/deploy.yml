@@ -31,7 +31,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Define a pasta que contém o site estático
+          # Define the folder containing the static site
           path: './placement_game'
 
       - name: Deploy to GitHub Pages

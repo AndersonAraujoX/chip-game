@@ -1,0 +1,11 @@
+{
+  "name": "chip-game",
+  "version": "1.0.0",
+  "description": "Chip Layout Optimizer (Floorplanning)",
+  "scripts": {
+    "test": "node --test placement_game/tests.test.js"
+  },
+  "keywords": [],
+  "author": "Anderson Araújo",
+  "license": "ISC"
+}

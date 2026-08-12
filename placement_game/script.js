@@ -5,8 +5,8 @@
 const LEVELS = {
   1: {
     id: 1,
-    title: "Nível 1: Introdução",
-    desc: "Um grid pequeno de 3x3 com 3 blocos. Coloque todos os blocos no grid sem sobreposições. Tente aproximar os blocos que possuem conexão.",
+    title: "Level 1: Introduction",
+    desc: "A small 3x3 grid with 3 blocks. Place all blocks on the grid without overlaps. Try to keep connected blocks close together.",
     M: 3,
     N: 3,
     block_sizes: {
@@ -17,16 +17,16 @@ const LEVELS = {
     fixed_positions: {},
     boundary_constraints: {},
     proximity_affinity: {
-      "0-1": 15.0, // Alta afinidade entre Bloco 0 e Bloco 1
+      "0-1": 15.0, // High affinity between Block 0 and Block 1
       "1-2": 5.0
     },
     allow_rotation: true,
-    optimal_cost: 0.0 // calculado dinamicamente ou fixo
+    optimal_cost: 0.0
   },
   2: {
     id: 2,
-    title: "Nível 2: Doutorado (11 Qubits)",
-    desc: "O exato problema do comparativo clásico vs quântico do seu doutorado (run_comparison.py). O grid é 3x3 com 5 blocos. Blocos 0 e 1 estão fixos. Blocos 2, 3 e 4 possuem restrições rígidas de fronteira.",
+    title: "Level 2: PhD Benchmark (11 Qubits)",
+    desc: "The exact classical vs quantum benchmark problem from the PhD study (run_comparison.py). The grid is 3x3 with 5 blocks. Blocks 0 and 1 are fixed. Blocks 2, 3, and 4 have hard boundary constraints.",
     M: 3,
     N: 3,
     block_sizes: {
@@ -37,22 +37,22 @@ const LEVELS = {
       4: [1, 1]
     },
     fixed_positions: {
-      0: [0, 0], // bloco 0 fixo em m=0, n=0 (rot=0 implícito)
-      1: [2, 1]  // bloco 1 fixo em m=2, n=1 (rot=0 implícito)
+      0: [0, 0], // Block 0 fixed at m=0, n=0 (rot=0 implicit)
+      1: [2, 1]  // Block 1 fixed at m=2, n=1 (rot=0 implicit)
     },
     boundary_constraints: {
-      2: 'N', // Bloco 2 na borda Norte (m=0)
-      3: 'S', // Bloco 3 na borda Sul (m=2)
-      4: 'E'  // Bloco 4 na borda Leste (n=2)
+      2: 'N', // Block 2 on North boundary (m=0)
+      3: 'S', // Block 3 on South boundary (m=2)
+      4: 'E'  // Block 4 on East boundary (n=2)
     },
-    proximity_affinity: {}, // Todos os blocos conectados pela distância clássica (lambda_dist)
-    allow_rotation: false, // Conforme run_comparison.py
+    proximity_affinity: {}, // All blocks connected by classical distance (lambda_dist)
+    allow_rotation: false, // Per run_comparison.py
     optimal_cost: 13.50
   },
   3: {
     id: 3,
-    title: "Nível 3: Intermediário",
-    desc: "Grid de 5x5 com 6 blocos. Há blocos maiores e uma rede mais complexa de fiação. Atenção às restrições de borda dos blocos 3 e 4.",
+    title: "Level 3: Intermediate",
+    desc: "A 5x5 grid with 6 blocks. Features larger blocks and a more complex wiring network. Pay attention to the boundary constraints on blocks 3 and 4.",
     M: 5,
     N: 5,
     block_sizes: {
@@ -65,8 +65,8 @@ const LEVELS = {
     },
     fixed_positions: {},
     boundary_constraints: {
-      3: 'W', // Borda Oeste (n=0)
-      4: 'E'  // Borda Leste (n=4)
+      3: 'W', // West boundary (n=0)
+      4: 'E'  // East boundary (n=4)
     },
     proximity_affinity: {
       "0-1": 8.0,
@@ -80,8 +80,8 @@ const LEVELS = {
   },
   4: {
     id: 4,
-    title: "Nível 4: Desafio Complexo",
-    desc: "Grid 8x8 com 10 blocos de vários tamanhos. O bloco 0 está travado na posição inicial. Encontre uma solução sem colisões e com a fiação o mais curta possível.",
+    title: "Level 4: Complex Challenge",
+    desc: "An 8x8 grid with 10 blocks of various sizes. Block 0 is locked at the starting position. Find a collision-free solution with the shortest possible wiring.",
     M: 8,
     N: 8,
     block_sizes: {
@@ -242,7 +242,7 @@ function loadLevel(levelId) {
   levelTitle.textContent = level.title;
   levelDesc.textContent = level.desc;
   
-  // Atualiza exibição de restrições rígidas no painel
+  // Update display of hard constraints in side panel
   levelConstraintsList.innerHTML = "";
   let hasRules = false;
   
@@ -251,7 +251,7 @@ function loadLevel(levelId) {
     for (let bid in level.fixed_positions) {
       let pos = level.fixed_positions[bid];
       let li = document.createElement("li");
-      li.innerHTML = `Bloco <b>${bid}</b> travado na posição <b>(${pos[0]}, ${pos[1]})</b>.`;
+      li.innerHTML = typeof I18N !== 'undefined' ? I18N.messages.fixedBlock(bid, pos[0], pos[1]) : `Block <b>${bid}</b> fixed at position <b>(${pos[0]}, ${pos[1]})</b>.`;
       levelConstraintsList.appendChild(li);
     }
   }
@@ -260,26 +260,26 @@ function loadLevel(levelId) {
     hasRules = true;
     for (let bid in level.boundary_constraints) {
       let bnd = level.boundary_constraints[bid];
-      let bndName = bnd === 'N' ? 'Norte (Topo)' : bnd === 'S' ? 'Sul (Base)' : bnd === 'W' ? 'Oeste (Esquerda)' : 'Leste (Direita)';
+      let bndName = (typeof I18N !== 'undefined' && I18N.boundaries[bnd]) ? I18N.boundaries[bnd] : (bnd === 'N' ? 'North (Top)' : bnd === 'S' ? 'South (Bottom)' : bnd === 'W' ? 'West (Left)' : 'East (Right)');
       let li = document.createElement("li");
-      li.innerHTML = `Bloco <b>${bid}</b> restrito à borda <b>${bndName}</b>.`;
+      li.innerHTML = typeof I18N !== 'undefined' ? I18N.messages.boundaryRestricted(bid, bndName) : `Block <b>${bid}</b> restricted to boundary <b>${bndName}</b>.`;
       levelConstraintsList.appendChild(li);
     }
   }
 
   if (levelId === 2) {
     let li = document.createElement("li");
-    li.innerHTML = `Rotação de blocos <b>desativada</b> para este caso de teste.`;
+    li.innerHTML = typeof I18N !== 'undefined' ? I18N.messages.rotationDisabled : `Block rotation <b>disabled</b> for this test case.`;
     levelConstraintsList.appendChild(li);
   }
   
   if (!hasRules) {
     let li = document.createElement("li");
-    li.textContent = "Nenhuma restrição rígida espacial de início.";
+    li.textContent = typeof I18N !== 'undefined' ? I18N.messages.noHardConstraints : "No initial spatial hard constraints.";
     levelConstraintsList.appendChild(li);
   }
 
-  // Mostrar benchmarks específicos do doutorado no Nível 2
+  // Display PhD benchmarks for Level 2
   if (levelId === 2) {
     doutoradoComparison.style.display = "block";
   } else {
@@ -288,7 +288,7 @@ function loadLevel(levelId) {
 
 
 
-  // Resetar parâmetros para valores padrão do nível se for nível 2
+  // Reset parameters to level default values if Level 2
   if (levelId === 2) {
     lambdaAlloc = 50.0;
     lambdaOverlap = 50.0;
@@ -303,7 +303,7 @@ function loadLevel(levelId) {
     valLambdaDist.textContent = "5.0";
   }
 
-  // Inicializar estrutura de dados dos blocos
+  // Initialize blocks data structure
   blocks = {};
   for (let bid in level.block_sizes) {
     const size = level.block_sizes[bid];
@@ -324,7 +324,7 @@ function loadLevel(levelId) {
       boundary: boundary
     };
 
-    // Se estiver fixo, posiciona imediatamente
+    // If fixed, position immediately
     if (isFixed) {
       const pos = level.fixed_positions[bid];
       blocks[bid].m = pos[0];
@@ -333,19 +333,20 @@ function loadLevel(levelId) {
     }
   }
 
-  // Gerar o qubit_map para fins de cálculo de custo QUBO exato
+  // Generate qubit_map for exact QUBO cost evaluation
   generateQubitMap();
 
-  // Renderizar a grelha física
+  // Render physical grid
   renderGrid();
   
-  // Renderizar prateleira e blocos colocados
+  // Render shelf and placed blocks
   renderShelfAndPlaced();
   
-  // Calcular e atualizar fiações e estatísticas
+  // Calculate and update wiring and stats
   updateStatsAndWiring();
   
-  showToast(`${level.title} carregado!`, "info");
+  const loadedMsg = typeof I18N !== 'undefined' ? I18N.messages.levelLoaded(level.title) : `${level.title} loaded!`;
+  showToast(loadedMsg, "info");
 }
 
 // 5. Geração do Mapeamento de Qubits Lógicos (Semelhante ao mapping.py em Python)
@@ -487,7 +488,7 @@ function createBlockElement(block) {
   if (block.boundary) {
     const req = document.createElement("div");
     req.classList.add("block-requirement");
-    req.textContent = `Borda: ${block.boundary}`;
+    req.textContent = typeof I18N !== 'undefined' ? I18N.messages.boundaryTag(block.boundary) : `Boundary: ${block.boundary}`;
     blockEl.appendChild(req);
   }
   
@@ -495,13 +496,13 @@ function createBlockElement(block) {
     blockEl.classList.add("fixed");
     blockEl.classList.add("is-fixed-tag");
   } else {
-    // Botão de rotação rápida
+    // Quick rotation button
     const level = LEVELS[currentLevelId];
     if (level.allow_rotation && block.W_orig !== block.H_orig) {
       const rotBtn = document.createElement("div");
       rotBtn.classList.add("block-rotate-btn");
       rotBtn.innerHTML = "🔄";
-      rotBtn.title = "Rotacionar 90 graus (Teclado: R)";
+      rotBtn.title = typeof I18N !== 'undefined' ? I18N.messages.rotateTooltip : "Rotate 90 degrees (Keyboard: R)";
       
       // Impede propagação do drag ao clicar no botão
       rotBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
@@ -660,7 +661,8 @@ function checkBoundaryViolation(block) {
   else if (block.boundary === 'any' && (is_north || is_south || is_west || is_east)) valid = true;
   
   if (!valid) {
-    showToast(`Bloco ${block.id} deve ficar na borda ${block.boundary}!`, "warning");
+    const msg = typeof I18N !== 'undefined' ? I18N.messages.boundaryViolationToast(block.id, block.boundary) : `Block ${block.id} must be placed on the ${block.boundary} boundary!`;
+    showToast(msg, "warning");
     return false;
   }
   return true;
@@ -669,14 +671,15 @@ function checkBoundaryViolation(block) {
 function rotateBlock(bid) {
   const level = LEVELS[currentLevelId];
   if (!level.allow_rotation) {
-    showToast("Rotação de blocos desativada para este nível.", "warning");
+    const msg = typeof I18N !== 'undefined' ? I18N.messages.rotationDisabledToast : "Block rotation disabled for this level.";
+    showToast(msg, "warning");
     return;
   }
   
   const block = blocks[bid];
   if (block.fixed) return;
   
-  // Swap W e H
+  // Swap W and H
   const newW = block.H;
   const newH = block.W;
   
@@ -684,21 +687,22 @@ function rotateBlock(bid) {
   block.H = newH;
   block.rot = block.rot === 0 ? 1 : 0;
   
-  // Se estiver posicionado, ajusta se sair do grid
+  // If placed, adjust position if it exceeds grid bounds
   if (block.placed) {
     if (block.m + block.H > gridM) {
-      block.m = gridM - block.H; // Nudge vertical
+      block.m = gridM - block.H; // Vertical nudge
     }
     if (block.n + block.W > gridN) {
-      block.n = gridN - block.W; // Nudge horizontal
+      block.n = gridN - block.W; // Horizontal nudge
     }
     
     if (block.m < 0 || block.n < 0) {
-      // Se mesmo com ajuste não couber (ex: bloco muito grande), desfaz rotação
+      // Revert rotation if it still doesn't fit
       block.W = block.H;
       block.H = newW;
       block.rot = block.rot === 0 ? 1 : 0;
-      showToast("Espaço insuficiente para rotacionar!", "error");
+      const msg = typeof I18N !== 'undefined' ? I18N.messages.insufficientSpaceToast : "Insufficient space to rotate!";
+      showToast(msg, "error");
     } else {
       checkBoundaryViolation(block);
     }
@@ -723,7 +727,8 @@ function resetLayout() {
   }
   renderShelfAndPlaced();
   updateStatsAndWiring();
-  showToast("Layout redefinido!", "info");
+  const msg = typeof I18N !== 'undefined' ? I18N.messages.layoutResetToast : "Layout reset!";
+  showToast(msg, "info");
 }
 
 // 8. Motores Matemáticos de Custo (Cálculos de QUBO / Ising)
@@ -966,10 +971,10 @@ function updateStatsAndWiring() {
   statTotalCost.textContent = cost.toFixed(2);
   
   if (valid) {
-    statValid.textContent = "Sim";
+    statValid.textContent = typeof I18N !== 'undefined' ? I18N.messages.yes : "Yes";
     statValid.className = "stat-value valid";
   } else {
-    statValid.textContent = "Não";
+    statValid.textContent = typeof I18N !== 'undefined' ? I18N.messages.no : "No";
     statValid.className = "stat-value invalid";
   }
   
@@ -977,12 +982,12 @@ function updateStatsAndWiring() {
   if (overlaps > 0) {
     statOverlaps.className = "stat-value invalid";
   } else {
-    statOverlaps.className = "stat-value warning"; // 0 mas inválido se não colocou todos
+    statOverlaps.className = "stat-value warning"; // 0 but invalid if not all placed
   }
   
   statWirelength.textContent = totalWire.toFixed(2);
 
-  // Atualizar comparativo do Doutorado
+  // Update PhD Benchmark comparison
   if (currentLevelId === 2) {
     const optCost = 22.0 * lambdaDist;
     document.getElementById("comp-qaoa").textContent = optCost.toFixed(2);
@@ -992,7 +997,8 @@ function updateStatsAndWiring() {
     if (valid && Math.abs(cost - optCost) < 1e-2) {
       compManual.style.color = "var(--success)";
       if (!window.showedLevel2Success) {
-        showToast("Parabéns! Você encontrou o layout ótimo clássico/quântico do doutorado!", "success");
+        const msg = typeof I18N !== 'undefined' ? I18N.messages.phdSuccessToast : "Congratulations! You found the optimal classical/quantum layout for the PhD benchmark!";
+        showToast(msg, "success");
         window.showedLevel2Success = true;
       }
     } else {
@@ -1139,21 +1145,39 @@ function exportLayout() {
   
   const jsonStr = JSON.stringify(solution, null, 2);
   
-  // Copiar para área de transferência
-  navigator.clipboard.writeText(jsonStr).then(() => {
-    showToast("Layout copiado para a Área de Transferência (JSON)!", "success");
-    console.log("Layout Exportado:\n", jsonStr);
-  }).catch(() => {
-    // Fallback se clipboard api falhar
-    const blob = new Blob([jsonStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `layout_level_${currentLevelId}.json`;
-    a.click();
-    showToast("Download do JSON de layout iniciado!", "success");
-  });
+  // Copy to clipboard
+  if (typeof navigator !== 'undefined' && navigator.clipboard) {
+    navigator.clipboard.writeText(jsonStr).then(() => {
+      const msg = typeof I18N !== 'undefined' ? I18N.messages.exportClipboardToast : "Layout copied to Clipboard (JSON)!";
+      showToast(msg, "success");
+      console.log("Layout Exported:\n", jsonStr);
+    }).catch(() => {
+      // Fallback if clipboard API fails
+      if (typeof Blob !== 'undefined' && typeof URL !== 'undefined') {
+        const blob = new Blob([jsonStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `layout_level_${currentLevelId}.json`;
+        a.click();
+        const msg = typeof I18N !== 'undefined' ? I18N.messages.exportDownloadToast : "Download of layout JSON started!";
+        showToast(msg, "success");
+      }
+    });
+  }
 }
 
-// Inicia o jogo
-window.onload = init;
+// Start game
+if (typeof window !== 'undefined') {
+  window.onload = init;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    LEVELS,
+    calculateExactQUBOCost,
+    checkValidity,
+    countOverlappingCells,
+    generateQubitMap
+  };
+}
