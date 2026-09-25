@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Introdução &amp; Contexto Teórico | Otimizador de Layout de Chips (Floorplanning)</title>
+  <meta name="description" content="Contexto teórico e fundamentação científica sobre posicionamento de blocos em circuitos integrados (Floorplanning VLSI), Otimização Combinatória Clássica (Simulated Annealing) e Computação Quântica (QAOA / Ising / QUBO).">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="intro-body">
+
+  <!-- Header / Barra de Navegação -->
+  <header class="intro-header">
+    <div class="intro-brand">
+      <div class="intro-logo-symbol">⚛️</div>
+      <div class="intro-brand-text">
+        <h2>Chip Layout Optimizer</h2>
+        <span class="intro-subbrand">QUANTA UFSCar • Teoria &amp; Aplicação</span>
+      </div>
+    </div>
+
+    <nav class="intro-nav">
+      <a href="#contexto">O Problema</a>
+      <a href="#hamiltoniano">Hamiltoniano (QUBO)</a>
+      <a href="#classico-quantico">Clássico vs Quântico</a>
+      <a href="#benchmark">PhD Benchmark</a>
+      <a href="#como-jogar">Instruções</a>
+    </nav>
+
+    <div class="header-controls" style="display: flex; align-items: center; gap: 12px;">
+      <button id="btn-theme-toggle" class="btn-theme-toggle" title="Alternar Modo Claro / Escuro">
+        <span id="theme-toggle-icon">☀️</span>
+        <span id="theme-toggle-label">Modo Claro</span>
+      </button>
+
+      <a href="index.html" class="btn btn-primary intro-cta-btn">
+        <span>🎮</span> Iniciar Otimizador
+      </a>
+    </div>
+  </header>
+
+  <!-- Container Principal -->
+  <main class="intro-container">
+
+    <!-- Hero Section -->
+    <section class="intro-hero">
+      <div class="intro-hero-content">
+        <div class="intro-badge">
+          <span class="badge-dot"></span> ESTUDOS AVANÇADOS • VLSI &amp; COMPUTAÇÃO QUÂNTICA
+        </div>
+        <h1 class="intro-title">
+          Otimização Combinatória no Posicionamento de Chips <span>(Floorplanning)</span>
+        </h1>
+        <p class="intro-lead">
+          Como a interação entre <strong>física quântica</strong>, <strong>modelos de Ising/QUBO</strong> e <strong>têmpera simulada clássica</strong> resolve um dos maiores gargalos da engenharia de semicondutores moderna: o posicionamento ideal de módulos em circuitos integrados.
+        </p>
+
+        <div class="intro-hero-actions">
+          <a href="index.html" class="btn btn-primary intro-btn-lg">
+            <span>🎮</span> Jogar / Simular Agora
+          </a>
+          <a href="#hamiltoniano" class="btn btn-secondary intro-btn-lg">
+            <span>⚛️</span> Ver Hamiltoniano de Custo
+          </a>
+        </div>
+      </div>
+
+      <div class="intro-hero-visual">
+        <div class="hero-chip-card">
+          <div class="chip-card-header">
+            <span class="chip-status-dot"></span>
+            <span>Matriz de Posicionamento VLSI (Grade 2D)</span>
+          </div>
+          <div class="chip-graphic-grid">
+            <div class="chip-cell cell-fixed" style="grid-column: 1 / 3; grid-row: 1 / 2;">
+              <span>CPU Core (α=0)</span>
+              <small>Fixed (0,0)</small>
+            </div>
+            <div class="chip-cell cell-free" style="grid-column: 3 / 4; grid-row: 1 / 2;">
+              <span>SRAM (α=2)</span>
+              <small>North Bnd</small>
+            </div>
+            <div class="chip-cell cell-wire" style="grid-column: 2 / 4; grid-row: 2 / 3;">
+              <span>Fiação Manhattan (L1)</span>
+              <small>Wirelength Min</small>
+            </div>
+            <div class="chip-cell cell-fixed" style="grid-column: 2 / 4; grid-row: 3 / 4;">
+              <span>ALU Unit (α=1)</span>
+              <small>Fixed (2,1)</small>
+            </div>
+          </div>
+          <div class="chip-card-footer">
+            <span>⚡ H<sub>cost</sub> = 13.50 (Zero Overlap)</span>
+            <span style="color: var(--accent-cyan);">Ground State Ótimo</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção 1: O Problema do Floorplanning -->
+    <section class="intro-section" id="contexto">
+      <div class="section-header">
+        <div class="section-tag">GARGALO TECNOLÓGICO</div>
+        <h2>O que é Floorplanning em Circuitos Integrados?</h2>
+        <p class="section-subtitle">
+          Na fabricação de microprocessadores (como arquiteturas RISC-V e chips de inteligência artificial), bilhões de transistores são agrupados em blocos funcionais que precisam ser fisicamente dispostos no silício.
+        </p>
+      </div>
+
+      <div class="intro-grid-3">
+        <div class="intro-card">
+          <div class="intro-card-icon">🧩</div>
+          <h3>1. Restrição de Não-Sobreposição</h3>
+          <p>
+            Dois blocos de silício não podem ocupar a mesma região física no chip tridimensional. Cada célula geométrica $(r, c)$ da grade deve conter no máximo um componente:
+          </p>
+          <div class="code-pill">o(r, c) ≤ 1 &nbsp;∀ (r, c) ∈ Grade</div>
+        </div>
+
+        <div class="intro-card">
+          <div class="intro-card-icon">⚡</div>
+          <h3>2. Minimização do Wirelength</h3>
+          <p>
+            Fios longos aumentam a capacitância parasita, atrasam sinais de clock e dissipam calor. O objetivo é posicionar blocos com alta taxa de comunicação próximos uns dos outros, minimizando a distância Manhattan:
+          </p>
+          <div class="code-pill">d<sub>ij</sub> = |m<sub>i</sub> - m<sub>j</sub>| + |n<sub>i</sub> - n<sub>j</sub>|</div>
+        </div>
+
+        <div class="intro-card">
+          <div class="intro-card-icon">🚪</div>
+          <h3>3. Portas de I/O e Bordas Rígidas</h3>
+          <p>
+            Módulos de comunicação externa (ex: controladores de memória DDR, barramentos PCIe) devem ser posicionados nas bordas do chip (Norte, Sul, Leste ou Oeste) para permitir conexões externas (Pads).
+          </p>
+          <div class="code-pill">m ∈ {0, M-1} ou n ∈ {0, N-1}</div>
+        </div>
+      </div>
+
+      <!-- Callout de Complexidade -->
+      <div class="intro-callout alert-complexity">
+        <div class="callout-icon">💥</div>
+        <div class="callout-content">
+          <h4>Complexidade Combinatória Exponencial (NP-Hard)</h4>
+          <p>
+            Para uma grade de $M \times N$ células com $B$ blocos e rotações permitidas ($0^\circ$ ou $90^\circ$), o espaço de configurações possíveis cresce como $O((2 \cdot M \cdot N)^B)$. Para apenas 10 blocos em uma grade 8x8, existem mais de <strong>$10^{20}$ combinações possíveis</strong>, tornando inviável a busca exaustiva por força bruta clássica.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção 2: O Hamiltoniano de Custo (QUBO / Ising) -->
+    <section class="intro-section" id="hamiltoniano">
+      <div class="section-header">
+        <div class="section-tag">FORMULAÇÃO FÍSICA &amp; MATEMÁTICA</div>
+        <h2>O Hamiltoniano de Custo (H<sub>cost</sub> / QUBO / Ising)</h2>
+        <p class="section-subtitle">
+          Na computação quântica e no annealing, o problema combinatorial é mapeado em um sistema de spins de Ising ou variáveis binárias QUBO ($x_i \in \{0, 1\}$), onde a solução de layout válida e ótima corresponde ao <strong>estado fundamental (Ground State)</strong> de menor energia.
+        </p>
+      </div>
+
+      <div class="hamiltonian-master-card">
+        <div class="math-banner">
+          <span class="math-main-eq">
+            Ĥ<sub>cost</sub> = Ĥ<sub>alloc</sub> + Ĥ<sub>overlap</sub> + Ĥ<sub>dist</sub>
+          </span>
+        </div>
+
+        <div class="hamiltonian-terms-grid">
+          <!-- Termo 1: Alocação -->
+          <div class="h-term-card">
+            <div class="h-term-badge">PARCELA 1</div>
+            <h4>Ĥ<sub>alloc</sub> • Penalidade de Alocação Única</h4>
+            <div class="math-box">
+              Ĥ<sub>alloc</sub> = λ<sub>alloc</sub> ∑<sub>α=1</sub><sup>B</sup> ( ∑<sub>i ∈ α</sub> x<sub>i</sub> - 1 )<sup>2</sup>
+            </div>
+            <p>
+              Garante que cada bloco físico $\alpha$ seja alocado em <strong>exatamente uma posição e rotação</strong> na grade. Se um bloco não for posicionado ou for duplicado, a penalidade cresce quadraticamente.
+            </p>
+          </div>
+
+          <!-- Termo 2: Sobreposição -->
+          <div class="h-term-card">
+            <div class="h-term-badge">PARCELA 2</div>
+            <h4>Ĥ<sub>overlap</sub> • Penalidade de Sobreposição Geométrica</h4>
+            <div class="math-box">
+              Ĥ<sub>overlap</sub> = λ<sub>overlap</sub> ∑<sub>(r, c)</sub> ∑<sub>α &lt; β</sub> o<sub>α</sub>(r, c) · o<sub>β</sub>(r, c)
+            </div>
+            <p>
+              Penaliza cada célula física $(r, c)$ da grade que for ocupada simultaneamente por dois blocos distintos $\alpha$ e $\beta$. Para garantir um chip válido, este termo deve ser estritamente zero.
+            </p>
+          </div>
+
+          <!-- Termo 3: Fiação / Distância -->
+          <div class="h-term-card" style="grid-column: span 2;">
+            <div class="h-term-badge">PARCELA 3</div>
+            <h4>Ĥ<sub>dist</sub> • Comprimento de Fiação &amp; Afinidades de Conexão</h4>
+            <div class="math-box">
+              Ĥ<sub>dist</sub> = ∑<sub>i &lt; j</sub> ( λ<sub>dist</sub> + w<sub>ij</sub> ) · d(c<sub>i</sub>, c<sub>j</sub>) · x<sub>i</sub> · x<sub>j</sub>
+            </div>
+            <p>
+              Calcula a distância Manhattan entre os centros geométricos $c_i$ e $c_j$ dos blocos conectados por sinais elétricos. Conexões de alta prioridade possuem peso de afinidade $w_{ij}$ aumentado para aproximar os blocos no layout final.
+            </p>
+          </div>
+        </div>
+
+        <!-- Regra Científica Fundamental -->
+        <div class="quantum-rule-card">
+          <div class="rule-icon">🛡️</div>
+          <div class="rule-text">
+            <strong>Regra Fundamental de Integridade Quântica:</strong>
+            As coordenadas dos blocos e a detecção de colisões são extraídas <strong>100% diretamente da função de onda quântica</strong> (medição dos qubits ou cálculo de valor esperado $\langle H_{\text{cost}} \rangle$). É terminantemente proibido o uso de algoritmos clássicos de reparo guloso pós-processamento: a validade do layout decorre exclusivamente dos pesos de penalidade ($\lambda_{\text{alloc}}, \lambda_{\text{overlap}}$) no Hamiltoniano.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção 3: Clássico vs Quântico -->
+    <section class="intro-section" id="classico-quantico">
+      <div class="section-header">
+        <div class="section-tag">PARADIGMAS DE SOLUÇÃO</div>
+        <h2>Otimização Clássica vs Computação Quântica</h2>
+        <p class="section-subtitle">
+          Como diferentes motores combinatórios exploram o espaço de energia do Hamiltoniano para encontrar a disposição ótima dos componentes.
+        </p>
+      </div>
+
+      <div class="comparison-dual-grid">
+        <div class="dual-card classical-card">
+          <div class="dual-header">
+            <span class="dual-icon">🧊</span>
+            <div>
+              <h3>Simulated Annealing (Têmpera Simulada)</h3>
+              <span class="dual-tag">Meta-Heurística Clássica</span>
+            </div>
+          </div>
+          <p>
+            Inspirado no resfriamento lento de metais na termodinâmica estatística (Kirkpatrick, 1983). O algoritmo aceita transições para estados de maior energia com probabilidade controlada pela temperatura:
+          </p>
+          <div class="math-box" style="margin: 10px 0;">
+            P(aceitar) = exp( -ΔE / T )
+          </div>
+          <ul class="dual-list">
+            <li><strong>Mecanismo:</strong> Permite "escapar" de mínimos locais quando a temperatura $T$ é alta.</li>
+            <li><strong>Convergência:</strong> Ao resfriar ($T \to 0$), estabiliza em soluções de baixa energia.</li>
+            <li><strong>No jogo:</strong> Motor integrado de têmpera em tempo real com taxa de resfriamento configurável e protegido pela senha <code>riscv</code>.</li>
+          </ul>
+        </div>
+
+        <div class="dual-card quantum-card">
+          <div class="dual-header">
+            <span class="dual-icon">⚛️</span>
+            <div>
+              <h3>QAOA &amp; Quantum Annealing</h3>
+              <span class="dual-tag">Computação Quântica Variacional</span>
+            </div>
+          </div>
+          <p>
+            Explora superposição e tunelamento quântico para atravessar barreiras de potencial energéticas que aprisionam algoritmos clássicos:
+          </p>
+          <div class="math-box" style="margin: 10px 0;">
+            |ψ(γ, β)⟩ = ∏<sub>l=1</sub><sup>p</sup> e<sup>-i β<sub>l</sub> Ĥ<sub>M</sub></sup> e<sup>-i γ<sub>l</sub> Ĥ<sub>cost</sub></sup> |+⟩<sup>⊗N</sup>
+          </div>
+          <ul class="dual-list">
+            <li><strong>Mecanismo:</strong> Alterna entre o Hamiltoniano de mistura $H_M$ e o Hamiltoniano de custo $H_{\text{cost}}$.</li>
+            <li><strong>Tunelamento:</strong> Permite transições quânticas diretas através de picos de barreira de custo de colisão.</li>
+            <li><strong>Ground State:</strong> Otimiza os ângulos variacionais $(\gamma, \beta)$ para maximizar a probabilidade de medir a solução ótima.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção 4: O Benchmark do Doutorado -->
+    <section class="intro-section" id="benchmark">
+      <div class="section-header">
+        <div class="section-tag">CASO DE ESTUDO CIENTÍFICO</div>
+        <h2>O Benchmark do Doutorado (Nível 2 • 11 Qubits)</h2>
+        <p class="section-subtitle">
+          O Nível 2 do simulador reproduz com precisão matemática o problema de teste clássico vs quântico analisado no estudo de doutorado (<code>run_comparison.py</code>).
+        </p>
+      </div>
+
+      <div class="benchmark-detail-card">
+        <div class="benchmark-params">
+          <div class="param-badge">
+            <span class="param-title">Grade Física</span>
+            <span class="param-val">3 × 3 Células</span>
+          </div>
+          <div class="param-badge">
+            <span class="param-title">Blocos Totais</span>
+            <span class="param-val">5 Blocos</span>
+          </div>
+          <div class="param-badge">
+            <span class="param-title">Blocos Fixos</span>
+            <span class="param-val">α=0 em (0,0), α=1 em (2,1)</span>
+          </div>
+          <div class="param-badge">
+            <span class="param-title">Restrições de Borda</span>
+            <span class="param-val">α=2 (Norte), α=3 (Sul), α=4 (Leste)</span>
+          </div>
+          <div class="param-badge">
+            <span class="param-title">Qubits Lógicos</span>
+            <span class="param-val">11 Qubits QUBO</span>
+          </div>
+          <div class="param-badge">
+            <span class="param-title">Custo Mínimo Ótimo</span>
+            <span class="param-val" style="color: var(--success);">13.50 (Zero Colisões)</span>
+          </div>
+        </div>
+
+        <p style="margin-top: 15px; font-size: 14px; line-height: 1.6; color: var(--text-muted);">
+          Neste caso de teste canônico, tanto o algoritmo quântico variacional (QAOA) quanto o Simulated Annealing clássico (Neal SA) convergem para a mesma solução ótima com custo de <strong>13.50</strong> (considerando pesos padrão $\lambda_{\text{alloc}}=50$, $\lambda_{\text{overlap}}=50$ e $\lambda_{\text{dist}}=5$). Você pode tentar encontrar manualmente este mesmo arranjo arrastando os blocos no Nível 2!
+        </p>
+      </div>
+    </section>
+
+    <!-- Seção 5: Como Jogar & Instruções -->
+    <section class="intro-section" id="como-jogar">
+      <div class="section-header">
+        <div class="section-tag">GUIA INTERATIVO</div>
+        <h2>Como Usar o Otimizador</h2>
+        <p class="section-subtitle">
+          Siga os passos abaixo para experimentar o posicionamento manual e automatizado de blocos no jogo.
+        </p>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h4>Selecione o Nível</h4>
+          <p>Escolha entre os níveis 1 (Introdução), 2 (Benchmark de Doutorado), 3 (Intermediário) e 4 (Desafio Complexo 8x8).</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h4>Arraste os Blocos</h4>
+          <p>Arraste cada bloco da prateleira direita para a grade central. Fique atento às restrições de borda (Norte, Sul, Leste, Oeste).</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h4>Rotacione com 'R'</h4>
+          <p>Pressione a tecla <kbd>R</kbd> no teclado ou dê um duplo-clique sobre um bloco para rotacioná-lo em 90° (quando permitido no nível).</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <h4>Monitore o Hamiltoniano</h4>
+          <p>Acompanhe na barra lateral as parcelas do Hamiltoniano ($H_{\text{alloc}}$, $H_{\text{overlap}}$, $H_{\text{dist}}$) e a energia total em tempo real.</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">5</div>
+          <h4>Otimize com Annealing</h4>
+          <p>Clique em <strong>⚡ Simulated Annealing</strong>, digite a senha de segurança <code>riscv</code> e assista à convergência em tempo real!</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">6</div>
+          <h4>Exporte seu Layout</h4>
+          <p>Ao atingir um layout válido de menor custo, clique em <strong>📤 Export Layout (JSON)</strong> para salvar a sua solução física.</p>
+        </div>
+      </div>
+
+      <!-- Banner Final de Ação -->
+      <div class="intro-cta-banner">
+        <h2>Pronto para Otimizar o Primeiro Chip?</h2>
+        <p>Experimente o posicionamento manual, compare seu resultado com o Simulated Annealing e descubra o layout de mínima energia do Hamiltoniano.</p>
+        <div style="margin-top: 20px;">
+          <a href="index.html" class="btn btn-primary intro-btn-lg" style="box-shadow: 0 6px 25px rgba(240, 96, 58, 0.4);">
+            <span>🚀</span> Abrir o Jogo &amp; Começar Agora
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="intro-footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <strong>Chip Layout Optimizer (Floorplanning)</strong>
+        <span>Desenvolvido como ferramenta didática e de pesquisa em Computação Quântica e Otimização Combinatória.</span>
+      </div>
+      <div class="footer-right">
+        <span>Anderson Araújo • Doutorado</span>
+        <span>QUANTA UFSCar</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script simples para alternância de tema na página de introdução -->
+  <script>
+    const btnThemeToggle = document.getElementById("btn-theme-toggle");
+    const themeToggleIcon = document.getElementById("theme-toggle-icon");
+    const themeToggleLabel = document.getElementById("theme-toggle-label");
+
+    // Ler preferência salva
+    const savedTheme = localStorage.getItem("game_theme") || "dark";
+    applyIntroTheme(savedTheme);
+
+    function applyIntroTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      if (themeToggleIcon) themeToggleIcon.textContent = theme === "light" ? "🌙" : "☀️";
+      if (themeToggleLabel) themeToggleLabel.textContent = theme === "light" ? "Modo Escuro" : "Modo Claro";
+      localStorage.setItem("game_theme", theme);
+    }
+
+    if (btnThemeToggle) {
+      btnThemeToggle.addEventListener("click", () => {
+        const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
+        const nextTheme = currentTheme === "light" ? "dark" : "light";
+        applyIntroTheme(nextTheme);
+      });
+    }
+  </script>
+</body>
+</html>
