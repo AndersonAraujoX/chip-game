@@ -53,7 +53,9 @@ const I18N = {
     saRunningToast: "Running Simulated Annealing optimization...",
     saSuccessToast: (cost) => `Simulated Annealing completed! Best cost: ${cost.toFixed(2)}`,
     cancel: "Cancel",
-    confirm: "Unlock & Optimize"
+    confirm: "Unlock & Optimize",
+    lightTheme: "Light Mode",
+    darkTheme: "Dark Mode"
   }
 };
 

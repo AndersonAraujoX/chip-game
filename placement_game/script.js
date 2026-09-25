@@ -210,41 +210,85 @@ const saPasswordInput = typeof document !== 'undefined' ? document.getElementByI
 const btnSubmitPassword = typeof document !== 'undefined' ? document.getElementById("btn-submit-password") : null;
 const btnCancelPassword = typeof document !== 'undefined' ? document.getElementById("btn-cancel-password") : null;
 
+// Theme State & DOM Elements
+let currentTheme = (typeof localStorage !== 'undefined' && localStorage.getItem('game_theme')) || 'dark';
+const btnThemeToggle = typeof document !== 'undefined' ? document.getElementById("btn-theme-toggle") : null;
+const themeToggleIcon = typeof document !== 'undefined' ? document.getElementById("theme-toggle-icon") : null;
+const themeToggleLabel = typeof document !== 'undefined' ? document.getElementById("theme-toggle-label") : null;
+
+function applyTheme(theme) {
+  currentTheme = theme;
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute("data-theme", theme);
+    if (themeToggleIcon) themeToggleIcon.textContent = theme === 'light' ? '🌙' : '☀️';
+    if (themeToggleLabel) {
+      themeToggleLabel.textContent = typeof I18N !== 'undefined' && I18N.messages[theme === 'light' ? 'darkTheme' : 'lightTheme']
+        ? I18N.messages[theme === 'light' ? 'darkTheme' : 'lightTheme']
+        : (theme === 'light' ? 'Dark Mode' : 'Light Mode');
+    }
+  }
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('game_theme', theme);
+  }
+}
+
+function toggleTheme() {
+  const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+  applyTheme(nextTheme);
+}
+
 // 3. Inicialização
 function init() {
+  applyTheme(currentTheme);
   setupEventListeners();
   loadLevel(currentLevelId);
 }
 
 function setupEventListeners() {
-  levelSelect.addEventListener("change", (e) => {
-    currentLevelId = parseInt(e.target.value);
-    loadLevel(currentLevelId);
-  });
+  if (levelSelect) {
+    levelSelect.addEventListener("change", (e) => {
+      currentLevelId = parseInt(e.target.value);
+      loadLevel(currentLevelId);
+    });
+  }
 
-  inputLambdaAlloc.addEventListener("input", (e) => {
-    lambdaAlloc = parseFloat(e.target.value);
-    valLambdaAlloc.textContent = lambdaAlloc.toFixed(1);
-    updateStatsAndWiring();
-  });
+  if (inputLambdaAlloc) {
+    inputLambdaAlloc.addEventListener("input", (e) => {
+      lambdaAlloc = parseFloat(e.target.value);
+      valLambdaAlloc.textContent = lambdaAlloc.toFixed(1);
+      updateStatsAndWiring();
+    });
+  }
 
-  inputLambdaOverlap.addEventListener("input", (e) => {
-    lambdaOverlap = parseFloat(e.target.value);
-    valLambdaOverlap.textContent = lambdaOverlap.toFixed(1);
-    updateStatsAndWiring();
-  });
+  if (inputLambdaOverlap) {
+    inputLambdaOverlap.addEventListener("input", (e) => {
+      lambdaOverlap = parseFloat(e.target.value);
+      valLambdaOverlap.textContent = lambdaOverlap.toFixed(1);
+      updateStatsAndWiring();
+    });
+  }
 
-  inputLambdaDist.addEventListener("input", (e) => {
-    lambdaDist = parseFloat(e.target.value);
-    valLambdaDist.textContent = lambdaDist.toFixed(1);
-    updateStatsAndWiring();
-  });
+  if (inputLambdaDist) {
+    inputLambdaDist.addEventListener("input", (e) => {
+      lambdaDist = parseFloat(e.target.value);
+      valLambdaDist.textContent = lambdaDist.toFixed(1);
+      updateStatsAndWiring();
+    });
+  }
 
-  btnReset.addEventListener("click", () => {
-    resetLayout();
-  });
+  if (btnReset) {
+    btnReset.addEventListener("click", () => {
+      resetLayout();
+    });
+  }
 
-  btnExport.addEventListener("click", exportLayout);
+  if (btnExport) {
+    btnExport.addEventListener("click", exportLayout);
+  }
+
+  if (btnThemeToggle) {
+    btnThemeToggle.addEventListener("click", toggleTheme);
+  }
 
   if (btnSaSolve) {
     btnSaSolve.addEventListener("click", () => {
@@ -1588,6 +1632,8 @@ if (typeof module !== 'undefined' && module.exports) {
     countOverlappingCells,
     generateQubitMap,
     checkOptimizerPassword,
-    runSimulatedAnnealing
+    runSimulatedAnnealing,
+    applyTheme,
+    toggleTheme
   };
 }

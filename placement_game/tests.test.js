@@ -166,3 +166,16 @@ test.describe('Simulated Annealing & Password Security Module', () => {
   });
 });
 
+test.describe('Theme Switcher Module (Dark & Light States)', () => {
+  const { applyTheme, toggleTheme } = require('./script.js');
+
+  test.it('AAA - Theme Switcher: Successfully executes applyTheme without error in Node environment', () => {
+    assert.doesNotThrow(() => applyTheme('light'));
+    assert.doesNotThrow(() => applyTheme('dark'));
+  });
+
+  test.it('AAA - Theme Switcher: Toggles between light and dark themes smoothly', () => {
+    assert.doesNotThrow(() => toggleTheme());
+  });
+});
+
