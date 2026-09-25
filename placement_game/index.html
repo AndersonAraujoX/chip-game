@@ -79,6 +79,39 @@
           </div>
           <input type="range" id="lambda-dist" min="1" max="20" step="0.5" value="5">
         </div>
+      <!-- Cost Hamiltonian (H_cost) Section -->
+      <div class="panel-title" style="margin-top: 15px;">
+        <span>⚛️</span> Cost Hamiltonian (H_cost)
+      </div>
+
+      <div class="info-card hamiltonian-card" id="hamiltonian-card">
+        <div class="hamiltonian-formula">
+          <span class="math-eq">H<sub>cost</sub> = H<sub>alloc</sub> + H<sub>overlap</sub> + H<sub>dist</sub></span>
+          <div class="math-subdetails">
+            <span class="math-sub">H<sub>alloc</sub> = λ<sub>alloc</sub> ∑<sub>α</sub> (∑ x<sub>i</sub> - 1)²</span>
+            <span class="math-sub">H<sub>overlap</sub> = λ<sub>overlap</sub> ∑<sub>(r,c)</sub> ∑<sub>α&lt;β</sub> o<sub>α</sub> o<sub>β</sub></span>
+            <span class="math-sub">H<sub>dist</sub> = ∑ (λ<sub>dist</sub> + w<sub>ij</sub>) d<sub>ij</sub> x<sub>i</sub> x<sub>j</sub></span>
+          </div>
+        </div>
+
+        <div class="hamiltonian-breakdown">
+          <div class="h-term-row">
+            <span class="h-term-name">H<sub>alloc</sub> (Allocation):</span>
+            <span class="h-term-val" id="h-val-alloc">0.00</span>
+          </div>
+          <div class="h-term-row">
+            <span class="h-term-name">H<sub>overlap</sub> (Collision):</span>
+            <span class="h-term-val" id="h-val-overlap">0.00</span>
+          </div>
+          <div class="h-term-row">
+            <span class="h-term-name">H<sub>dist</sub> (Wirelength):</span>
+            <span class="h-term-val" id="h-val-dist">0.00</span>
+          </div>
+          <div class="h-term-row h-total-row">
+            <span class="h-term-name">⟨H<sub>cost</sub>⟩ Energy:</span>
+            <span class="h-term-val h-total-val" id="h-val-total">0.00</span>
+          </div>
+        </div>
       </div>
 
       <div class="controls-actions">

@@ -179,3 +179,22 @@ test.describe('Theme Switcher Module (Dark & Light States)', () => {
   });
 });
 
+test.describe('Cost Hamiltonian Breakdown Module (H_cost / QUBO / Ising)', () => {
+  const { calculateExactQUBOCostBreakdown, generateQubitMap, LEVELS } = require('./script.js');
+
+  test.it('AAA - Cost Hamiltonian: Evaluates H_alloc, H_overlap, H_dist breakdown object correctly', () => {
+    // Act
+    generateQubitMap();
+    const xDummy = new Array(10).fill(0);
+    const bd = calculateExactQUBOCostBreakdown(xDummy);
+
+    // Assert
+    assert.ok(bd, 'Breakdown object should exist');
+    assert.strictEqual(typeof bd.h_alloc, 'number');
+    assert.strictEqual(typeof bd.h_overlap, 'number');
+    assert.strictEqual(typeof bd.h_dist, 'number');
+    assert.strictEqual(typeof bd.h_cost, 'number');
+    assert.strictEqual(bd.h_cost, bd.h_alloc + bd.h_overlap + bd.h_dist);
+  });
+});
+

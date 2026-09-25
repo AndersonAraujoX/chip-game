@@ -857,6 +857,8 @@ function getCurrentBinaryVector() {
 // Função de cálculo de custos idêntica ao cost.py
 function calculateExactQUBOCost(x) {
   const level = LEVELS[currentLevelId];
+function calculateExactQUBOCostBreakdown(x) {
+  const level = LEVELS[currentLevelId];
   const num_qubits = qubitMap.length;
   
   // 1. Alocação Única (C_alloc)
@@ -876,6 +878,7 @@ function calculateExactQUBOCost(x) {
     t1 -= (s - 1.0); // Ajuste linear clássico do Hamiltoniano
     t_alloc += lambdaAlloc * Math.pow(s - 1.0, 2);
   }
+  const h_alloc = t1 + t_alloc;
   
   // 2. Sobreposição Física (C_overlap) - Tipo 'pair'
   let t_overlap = 0.0;
@@ -911,6 +914,7 @@ function calculateExactQUBOCost(x) {
       }
     }
   }
+  const h_overlap = lambdaOverlap * t_overlap;
   
   // 3. Comprimento de Fiação e Proximidade (C_dist)
   let t_dist = 0.0;
@@ -951,8 +955,20 @@ function calculateExactQUBOCost(x) {
       }
     }
   }
-  
-  return t1 + t_alloc + lambdaOverlap * t_overlap + t_dist;
+  const h_dist = t_dist;
+  const h_cost = h_alloc + h_overlap + h_dist;
+
+  return {
+    h_alloc,
+    h_overlap,
+    h_dist,
+    h_cost
+  };
+}
+
+// Função de cálculo de custos idêntica ao cost.py
+function calculateExactQUBOCost(x) {
+  return calculateExactQUBOCostBreakdown(x).h_cost;
 }
 
 // Verifica se o layout físico é válido em termos de colisões e alocações (is_valid de cost.py)
@@ -1031,9 +1047,21 @@ function countOverlappingCells() {
 // 9. Atualização de Métricas & Desenho das Fiações
 function updateStatsAndWiring() {
   const x = getCurrentBinaryVector();
-  const cost = calculateExactQUBOCost(x);
+  const breakdown = calculateExactQUBOCostBreakdown(x);
+  const cost = breakdown.h_cost;
   const valid = checkValidity();
   const overlaps = countOverlappingCells();
+
+  // Atualizar DOM do Card do Hamiltoniano de Custo
+  const hValAlloc = typeof document !== 'undefined' ? document.getElementById("h-val-alloc") : null;
+  const hValOverlap = typeof document !== 'undefined' ? document.getElementById("h-val-overlap") : null;
+  const hValDist = typeof document !== 'undefined' ? document.getElementById("h-val-dist") : null;
+  const hValTotal = typeof document !== 'undefined' ? document.getElementById("h-val-total") : null;
+
+  if (hValAlloc) hValAlloc.textContent = breakdown.h_alloc.toFixed(2);
+  if (hValOverlap) hValOverlap.textContent = breakdown.h_overlap.toFixed(2);
+  if (hValDist) hValDist.textContent = breakdown.h_dist.toFixed(2);
+  if (hValTotal) hValTotal.textContent = breakdown.h_cost.toFixed(2);
   
   // Calcula comprimento físico total de fiação para exibição simples (L1 entre os colocados)
   let totalWire = 0;
@@ -1634,6 +1662,7 @@ if (typeof module !== 'undefined' && module.exports) {
     checkOptimizerPassword,
     runSimulatedAnnealing,
     applyTheme,
-    toggleTheme
+    toggleTheme,
+    calculateExactQUBOCostBreakdown
   };
 }
