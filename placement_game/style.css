@@ -1,23 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg-primary: #0a0f1d;
-  --bg-secondary: #131a30;
-  --bg-glass: rgba(19, 26, 48, 0.65);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --text-main: #f1f5f9;
-  --text-muted: #94a3b8;
-  --accent-cyan: #06b6d4;
-  --accent-indigo: #6366f1;
-  --accent-purple: #a855f7;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --bg-primary: #151c3f;
+  --bg-secondary: #242f62;
+  --bg-glass: rgba(36, 47, 98, 0.7);
+  --border-glass: rgba(230, 216, 195, 0.15);
+  --text-main: #f4f4f4;
+  --text-muted: #e6d8c3;
+  --accent-cyan: #ffc857;
+  --accent-indigo: #3a4a85;
+  --accent-purple: #f0603a;
+  --success: #a3a380;
+  --warning: #ffc857;
+  --danger: #b22d0d;
   --radius-sm: 8px;
   --radius-md: 16px;
   --radius-lg: 24px;
-  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-  --shadow-glow: 0 0 15px rgba(99, 102, 241, 0.4);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 15px rgba(240, 96, 58, 0.35);
 }
 
 * {
@@ -53,7 +53,7 @@ header h1 {
   font-family: 'Outfit', sans-serif;
   font-size: 24px;
   font-weight: 700;
-  background: linear-gradient(135deg, #06b6d4, #6366f1, #a855f7);
+  background: linear-gradient(135deg, #ffc857, #f0603a, #e53b11);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: flex;

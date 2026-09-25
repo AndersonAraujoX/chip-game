@@ -120,19 +120,36 @@ const LEVELS = {
   }
 };
 
-// Cores harmoniosas HSL para cada bloco
+// Paleta de 16 Cores Personalizadas
 const BLOCK_COLORS = [
-  "hsl(210, 80%, 45%)", // Azul
-  "hsl(150, 70%, 40%)", // Verde
-  "hsl(280, 75%, 45%)", // Roxo
-  "hsl(30, 85%, 45%)",  // Laranja
-  "hsl(330, 80%, 45%)", // Rosa
-  "hsl(180, 70%, 35%)", // Ciano
-  "hsl(260, 60%, 45%)", // Violeta escuro
-  "hsl(80, 65%, 40%)",  // Verde lima
-  "hsl(350, 75%, 45%)", // Vermelho escuro
-  "hsl(200, 80%, 40%)"  // Azul claro
+  "#e53b11", // 1. Vermelho Vibrante
+  "#3a4a85", // 2. Azul Escuro
+  "#f0603a", // 3. Coral / Laranja
+  "#5c6aa3", // 4. Azul Médio
+  "#ffc857", // 5. Amarelo Ouro
+  "#b22d0d", // 6. Carmim / Vermelho Escuro
+  "#c97b63", // 7. Terracota
+  "#242f62", // 8. Azul Marinho
+  "#f48a6e", // 9. Salmão Soft
+  "#a3a380", // 10. Verde Oliva Muted
+  "#d4b483", // 11. Bege Dourado
+  "#151c3f", // 12. Azul Noturno
+  "#e6d8c3", // 13. Creme
+  "#4a4a4a", // 14. Grafite
+  "#bfbfbf", // 15. Cinza Prata
+  "#f4f4f4"  // 16. Branco Off-White
 ];
+
+function getTextColorForBg(hex) {
+  if (!hex || typeof hex !== 'string' || !hex.startsWith('#')) return "#ffffff";
+  const c = hex.replace('#', '');
+  if (c.length !== 6) return "#ffffff";
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+  return luminance > 165 ? "#151c3f" : "#ffffff";
+}
 
 // 2. Estado Global do Jogo
 let currentLevelId = 1; // Começa no Nível 1 (Introdução)
@@ -513,7 +530,9 @@ function createBlockElement(block) {
   const blockEl = document.createElement("div");
   blockEl.classList.add("block");
   blockEl.dataset.id = block.id;
-  blockEl.style.backgroundColor = BLOCK_COLORS[block.id % BLOCK_COLORS.length];
+  const bgColor = BLOCK_COLORS[block.id % BLOCK_COLORS.length];
+  blockEl.style.backgroundColor = bgColor;
+  blockEl.style.color = getTextColorForBg(bgColor);
   
   // Elementos internos
   const label = document.createElement("div");
