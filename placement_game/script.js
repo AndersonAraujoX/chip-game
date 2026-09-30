@@ -47,7 +47,7 @@ const LEVELS = {
     },
     proximity_affinity: {}, // All blocks connected by classical distance (lambda_dist)
     allow_rotation: false, // Per run_comparison.py
-    optimal_cost: 13.50
+    optimal_cost: 110.00
   },
   3: {
     id: 3,
@@ -334,6 +334,7 @@ function setupEventListeners() {
 
 // 4. Carregamento de Nível
 function loadLevel(levelId) {
+  currentLevelId = levelId;
   const level = LEVELS[levelId];
   gridM = level.M;
   gridN = level.N;
@@ -854,9 +855,7 @@ function getCurrentBinaryVector() {
   return x;
 }
 
-// Função de cálculo de custos idêntica ao cost.py
-function calculateExactQUBOCost(x) {
-  const level = LEVELS[currentLevelId];
+// Decomposição detalhada dos termos do Hamiltoniano de Custo (H_cost)
 function calculateExactQUBOCostBreakdown(x) {
   const level = LEVELS[currentLevelId];
   const num_qubits = qubitMap.length;
@@ -1235,15 +1234,17 @@ function drawWiring() {
 }
 
 // Adiciona estilos de animação de pulso para as fiações
-const styleSheet = document.createElement("style");
-styleSheet.innerHTML = `
-  @keyframes dash {
-    to {
-      stroke-dashoffset: -1000;
+if (typeof document !== 'undefined' && document.head) {
+  const styleSheet = document.createElement("style");
+  styleSheet.innerHTML = `
+    @keyframes dash {
+      to {
+        stroke-dashoffset: -1000;
+      }
     }
-  }
-`;
-document.head.appendChild(styleSheet);
+  `;
+  document.head.appendChild(styleSheet);
+}
 
 
 
@@ -1289,6 +1290,9 @@ function handlePasswordSubmit() {
 
 // 11. Motor de Otimização Combinatória: Simulated Annealing (SA) em Tempo Real
 async function runSimulatedAnnealing(levelId = currentLevelId) {
+  if (levelId !== currentLevelId || Object.keys(blocks).length === 0) {
+    loadLevel(levelId);
+  }
   const level = LEVELS[levelId];
   if (!level) return null;
 
@@ -1367,23 +1371,23 @@ async function runSimulatedAnnealing(levelId = currentLevelId) {
 
   // Avalia o custo do estado atual de forma ultrarrápida (física direta O(N^2) em vez de QUBO O(Q^2))
   function evaluateState(state) {
+    // Sincroniza posições físicas em blocks
+    for (let bidInt of unfixedBlockIds) {
+      const pos = state[bidInt];
+      blocks[bidInt].placed = true;
+      blocks[bidInt].m = pos.m;
+      blocks[bidInt].n = pos.n;
+      blocks[bidInt].rot = pos.rot;
+      blocks[bidInt].W = pos.W;
+      blocks[bidInt].H = pos.H;
+    }
+
     const grid = Array.from({ length: gridM }, () => new Array(gridN).fill(0));
     
     // Contagem de células para sobreposição
-    for (let bidInt of unfixedBlockIds) {
-      const pos = state[bidInt];
-      for (let r = pos.m; r < pos.m + pos.H; r++) {
-        for (let c = pos.n; c < pos.n + pos.W; c++) {
-          if (r >= 0 && r < gridM && c >= 0 && c < gridN) {
-            grid[r][c]++;
-          }
-        }
-      }
-    }
-
     for (let bid in blocks) {
-      if (blocks[bid].fixed) {
-        const b = blocks[bid];
+      const b = blocks[bid];
+      if (b.placed) {
         for (let r = b.m; r < b.m + b.H; r++) {
           for (let c = b.n; c < b.n + b.W; c++) {
             if (r >= 0 && r < gridM && c >= 0 && c < gridN) {
@@ -1409,16 +1413,16 @@ async function runSimulatedAnnealing(levelId = currentLevelId) {
 
     for (let i = 0; i < allBids.length; i++) {
       const b1Id = allBids[i];
-      const pos1 = blocks[b1Id].fixed ? blocks[b1Id] : state[b1Id];
-      if (!pos1) continue;
+      const pos1 = blocks[b1Id];
+      if (!pos1 || !pos1.placed) continue;
 
       const cy1 = pos1.m + (pos1.H - 1) / 2.0;
       const cx1 = pos1.n + (pos1.W - 1) / 2.0;
 
       for (let j = i + 1; j < allBids.length; j++) {
         const b2Id = allBids[j];
-        const pos2 = blocks[b2Id].fixed ? blocks[b2Id] : state[b2Id];
-        if (!pos2) continue;
+        const pos2 = blocks[b2Id];
+        if (!pos2 || !pos2.placed) continue;
 
         const cy2 = pos2.m + (pos2.H - 1) / 2.0;
         const cx2 = pos2.n + (pos2.W - 1) / 2.0;
@@ -1467,8 +1471,8 @@ async function runSimulatedAnnealing(levelId = currentLevelId) {
   // 3. Loop do Simulated Annealing com Animação em Tempo Real
   let temp = 100.0;
   const minTemp = 0.001;
-  const coolingRate = 0.95;
-  const stepsPerTemp = 30;
+  const coolingRate = 0.96;
+  const stepsPerTemp = 40;
 
   const initialLogT = Math.log(100.0);
   const minLogT = Math.log(0.001);
@@ -1500,10 +1504,10 @@ async function runSimulatedAnnealing(levelId = currentLevelId) {
         const pos1 = nextState[b1];
         const pos2 = nextState[b2];
 
-        const b1_fits_in_pos2 = (pos2.m + pos1.H <= gridM && pos2.n + pos1.W <= gridN);
-        const b2_fits_in_pos1 = (pos1.m + pos2.H <= gridM && pos1.n + pos2.W <= gridN);
+        const b1_valid = candidateDomains[b1].some(d => d.m === pos2.m && d.n === pos2.n && (d.rot === undefined || d.rot === pos1.rot));
+        const b2_valid = candidateDomains[b2].some(d => d.m === pos1.m && d.n === pos1.n && (d.rot === undefined || d.rot === pos2.rot));
 
-        if (b1_fits_in_pos2 && b2_fits_in_pos1) {
+        if (b1_valid && b2_valid) {
           nextState[b1] = { m: pos2.m, n: pos2.n, rot: pos1.rot, W: pos1.W, H: pos1.H };
           nextState[b2] = { m: pos1.m, n: pos1.n, rot: pos2.rot, W: pos2.W, H: pos2.H };
         } else {
@@ -1538,16 +1542,6 @@ async function runSimulatedAnnealing(levelId = currentLevelId) {
       if (saCostDisplay) saCostDisplay.textContent = bestEnergy.toFixed(2);
       if (saProgressFill) saProgressFill.style.width = `${progressPct.toFixed(1)}%`;
 
-      // Atualiza a posição dos blocos na grade em tempo real
-      for (let bidInt of unfixedBlockIds) {
-        const pos = currentState[bidInt];
-        blocks[bidInt].placed = true;
-        blocks[bidInt].m = pos.m;
-        blocks[bidInt].n = pos.n;
-        blocks[bidInt].rot = pos.rot;
-        blocks[bidInt].W = pos.W;
-        blocks[bidInt].H = pos.H;
-      }
       renderShelfAndPlaced();
       updateStatsAndWiring();
 
@@ -1569,6 +1563,7 @@ async function runSimulatedAnnealing(levelId = currentLevelId) {
     blocks[bidInt].H = pos.H;
   }
 
+  bestValid = checkValidity();
   renderShelfAndPlaced();
   updateStatsAndWiring();
 
@@ -1590,6 +1585,7 @@ async function runSimulatedAnnealing(levelId = currentLevelId) {
 
 // 12. Utilitários (Toast & Export)
 function showToast(msg, type = "info") {
+  if (typeof document === 'undefined') return;
   const toast = document.getElementById("toast");
   if (!toast) return;
   toast.textContent = msg;

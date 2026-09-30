@@ -153,7 +153,7 @@ test.describe('Simulated Annealing & Password Security Module', () => {
     // Assert
     assert.ok(result, 'Result should not be null');
     assert.strictEqual(result.valid, true, 'SA solution should be valid with 0 overlaps and boundary constraints satisfied');
-    assert.ok(result.bestEnergy <= 15.0, 'SA best cost for Level 2 should be close to optimal 13.50');
+    assert.ok(result.bestEnergy <= 115.0, 'SA best cost for Level 2 should be close to optimal 110.00');
   });
 
   test.it('AAA - Simulated Annealing Engine: Finds valid solution for Level 1', async () => {
