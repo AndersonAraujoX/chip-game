@@ -198,3 +198,45 @@ test.describe('Cost Hamiltonian Breakdown Module (H_cost / QUBO / Ising)', () =>
   });
 });
 
+
+test.describe('QAOA state-vector simulator', () => {
+  const qaoa = require('./qaoa.js');
+  test.it('accepts 15 qubits and rejects 16 before evaluating costs', async () => {
+    assert.strictEqual(qaoa.supported(15), true);
+    assert.strictEqual(qaoa.supported(16), false);
+    await assert.rejects(qaoa.solve(16, () => { throw new Error('must not evaluate'); }), /1–15/);
+    const state = qaoa.state(new Float64Array(2 ** 15), 0, 0);
+    assert.ok(Math.abs(state.probabilities.reduce((a, b) => a + b, 0) - 1) < 1e-10);
+  });
+  test.it('matches an analytic one-qubit circuit and conserves probability', () => {
+    const result = qaoa.state([0, 1], Math.PI / 2, Math.PI / 4);
+    assert.ok(result.probabilities[1] > 1 - 1e-12);
+    assert.ok(Math.abs(result.expectation - 1) < 1e-12);
+    const uniform = qaoa.state([0, 1, 2, 3], 0, 0.7);
+    uniform.probabilities.forEach(p => assert.ok(Math.abs(p - 0.25) < 1e-12));
+  });
+  test.it('optimizes expectation and returns an actually measured energy', async () => {
+    const result = await qaoa.solve(1, bits => bits[0], { random: () => 0.5, shots: 32 });
+    assert.ok(result.expectation < 0.01);
+    assert.deepStrictEqual(result.bits, [0]);
+    assert.strictEqual(result.bestEnergy, 0);
+  });
+  test.it('uses full mapping counts and rejects oversized game levels', async () => {
+    const game = require('./script.js');
+    for (const [level, count] of [[1, 30], [2, 11], [3, 122], [4, 643]]) {
+      game.loadLevel(level);
+      assert.strictEqual(game.getQubitCount(), count);
+      if (count > 15) await assert.rejects(game.runQAOA(level), /15 qubits/);
+    }
+  });
+  test.it('runs the benchmark with the existing QUBO Hamiltonian', async () => {
+    const game = require('./script.js');
+    let seed = 42;
+    const random = () => ((seed = (1664525 * seed + 1013904223) >>> 0) / 2 ** 32);
+    const result = await game.runQAOA(2, { random });
+    assert.strictEqual(result.bits.length, 11);
+    assert.strictEqual(result.bestEnergy, game.calculateExactQUBOCost(result.bits));
+    assert.ok(Number.isFinite(result.expectation));
+    assert.strictEqual(typeof result.valid, 'boolean');
+  });
+});

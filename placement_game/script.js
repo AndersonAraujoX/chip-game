@@ -1,3 +1,5 @@
+const qaoaEngine = typeof module !== 'undefined' && module.exports ? require('./qaoa.js') : QAOA;
+let optimizerBusy = false;
 // Otimizador de Layout de Chips (Floorplanning) - Engine de Jogo e Solucionador SA
 // Anderson Araújo - Doutorado
 
@@ -300,6 +302,9 @@ function setupEventListeners() {
     });
   }
 
+  const qaoaButton = document.getElementById("btn-qaoa-solve");
+  if (qaoaButton) qaoaButton.addEventListener("click", () => runQAOA().catch(error => showToast(error.message, "error")));
+
   if (btnSubmitPassword) {
     btnSubmitPassword.addEventListener("click", handlePasswordSubmit);
   }
@@ -436,6 +441,8 @@ function loadLevel(levelId) {
 
   // Generate qubit_map for exact QUBO cost evaluation
   generateQubitMap();
+
+  updateQaoaAvailability();
 
   // Render physical grid
   renderGrid();
@@ -1290,6 +1297,18 @@ function handlePasswordSubmit() {
 
 // 11. Motor de Otimização Combinatória: Simulated Annealing (SA) em Tempo Real
 async function runSimulatedAnnealing(levelId = currentLevelId) {
+  if (optimizerBusy) return null;
+  optimizerBusy = true;
+  updateQaoaAvailability();
+  try {
+    return await solveSimulatedAnnealing(levelId);
+  } finally {
+    optimizerBusy = false;
+    updateQaoaAvailability();
+  }
+}
+
+async function solveSimulatedAnnealing(levelId = currentLevelId) {
   if (levelId !== currentLevelId || Object.keys(blocks).length === 0) {
     loadLevel(levelId);
   }
@@ -1583,6 +1602,65 @@ async function runSimulatedAnnealing(levelId = currentLevelId) {
   };
 }
 
+// QAOA uses the same complete logical mapping and cost function as the game.
+function updateQaoaAvailability() {
+  if (typeof document === 'undefined') return;
+  const button = document.getElementById('btn-qaoa-solve');
+  const status = document.getElementById('qaoa-status');
+  const available = qaoaEngine.supported(qubitMap.length);
+  if (button) button.disabled = optimizerBusy || !available;
+  if (status) status.textContent = `${qubitMap.length} qubits. ` + (available
+    ? 'Local QAOA simulation (p=1, 2048 shots).'
+    : 'QAOA disabled: maximum 15 qubits. Use Simulated Annealing.');
+}
+
+async function runQAOA(levelId = currentLevelId, options = {}) {
+  if (optimizerBusy) return null;
+  if (!LEVELS[levelId]) throw new Error('Unknown level');
+  if (levelId !== currentLevelId || Object.keys(blocks).length === 0) loadLevel(levelId);
+  if (!qaoaEngine.supported(qubitMap.length)) throw new RangeError('QAOA requires at most 15 qubits.');
+  optimizerBusy = true;
+  const controls = typeof document === 'undefined' ? [] :
+    [...document.querySelectorAll('button, select, input[type="range"]')];
+  const previous = controls.map(control => control.disabled);
+  controls.forEach(control => { control.disabled = true; });
+  const status = typeof document === 'undefined' ? null : document.getElementById('qaoa-status');
+  try {
+    const result = await qaoaEngine.solve(qubitMap.length, calculateExactQUBOCost, {
+      ...options,
+      onProgress: percent => { if (status) status.textContent = `QAOA: ${percent}%`; }
+    });
+    const selected = Object.fromEntries(Object.keys(blocks).map(id => [id, []]));
+    result.bits.forEach((bit, i) => { if (bit) selected[qubitMap[i].alpha].push(qubitMap[i]); });
+    // Multiple or missing allocations cannot be represented by one draggable block.
+    // Do not silently repair measurements or inject fixed blocks into the result.
+    const representable = Object.values(selected).every(entries => entries.length === 1);
+    result.valid = false;
+    if (representable) {
+      for (const [id, entries] of Object.entries(selected)) {
+        const item = entries[0], block = blocks[id];
+        Object.assign(block, { placed: true, m: item.m, n: item.n, rot: item.rot || 0 });
+        block.W = block.rot ? block.H_orig : block.W_orig;
+        block.H = block.rot ? block.W_orig : block.H_orig;
+      }
+      result.valid = checkValidity();
+      renderShelfAndPlaced();
+      updateStatsAndWiring();
+    }
+    const message = `QAOA: measured cost ${result.bestEnergy.toFixed(2)}; expected energy ${result.expectation.toFixed(2)}. ` +
+      (result.valid ? 'Valid layout.' : representable ? 'Invalid layout (overlaps).' : 'Invalid allocation; board kept.');
+    if (status) status.textContent = message;
+    showToast(message, result.valid ? 'success' : 'info');
+    return result;
+  } catch (error) {
+    if (status) status.textContent = `QAOA failed: ${error.message}`;
+    throw error;
+  } finally {
+    optimizerBusy = false;
+    controls.forEach((control, i) => { control.disabled = previous[i]; });
+  }
+}
+
 // 12. Utilitários (Toast & Export)
 function showToast(msg, type = "info") {
   if (typeof document === 'undefined') return;
@@ -1651,6 +1729,9 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     LEVELS,
+    loadLevel,
+    runQAOA,
+    getQubitCount: () => qubitMap.length,
     calculateExactQUBOCost,
     checkValidity,
     countOverlappingCells,

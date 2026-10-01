@@ -254,6 +254,13 @@
             <span class="dual-icon">⚛️</span>
             <div>
               <h3>QAOA &amp; Quantum Annealing</h3>
+              <p>O jogo inclui uma simulação local de QAOA com vetor de estado, profundidade p=1,
+              busca clássica dos parâmetros para minimizar a energia esperada e 2048 medições.
+              O botão fica desativado acima de 15 qubits do mapeamento completo, pois a memória
+              cresce como 2<sup>n</sup>. A melhor medição pode ser inválida e não há garantia de ótimo;
+              medições com alocação ausente ou múltipla são informadas sem alterar o tabuleiro.
+              Não há reparo clássico das medições. Implementação baseada em
+              <a href="https://arxiv.org/abs/1411.4028">Farhi, Goldstone e Gutmann (2014)</a>.</p>
               <span class="dual-tag">Computação Quântica Variacional</span>
             </div>
           </div>
