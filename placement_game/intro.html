@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Introdução &amp; Contexto Teórico | Otimizador de Layout de Chips (Floorplanning)</title>
   <meta name="description" content="Contexto teórico e fundamentação científica sobre posicionamento de blocos em circuitos integrados (Floorplanning VLSI), Otimização Combinatória Clássica (Simulated Annealing) e Computação Quântica (QAOA / Ising / QUBO).">
-  <link rel="stylesheet" href="style.css?v=1.0.1">
+  <link rel="stylesheet" href="style.css?v=1.0.3">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
@@ -28,6 +28,7 @@
       <a href="#classico-quantico">Clássico vs Quântico</a>
       <a href="#benchmark">PhD Benchmark</a>
       <a href="#como-jogar">Instruções</a>
+      <a href="#referencias">Referências</a>
     </nav>
 
     <div class="header-controls" style="display: flex; align-items: center; gap: 12px;">
@@ -115,7 +116,7 @@
           <div class="intro-card-icon">🧩</div>
           <h3>1. Restrição de Não-Sobreposição</h3>
           <p>
-            Dois blocos de silício não podem ocupar a mesma região física no chip tridimensional. Cada célula geométrica $(r, c)$ da grade deve conter no máximo um componente:
+            Dois blocos de silício não podem ocupar a mesma região física no chip. Cada célula geométrica <var>(r, c)</var> da grade deve conter no máximo um componente:
           </p>
           <div class="code-pill">o(r, c) ≤ 1 &nbsp;∀ (r, c) ∈ Grade</div>
         </div>
@@ -145,7 +146,7 @@
         <div class="callout-content">
           <h4>Complexidade Combinatória Exponencial (NP-Hard)</h4>
           <p>
-            Para uma grade de $M \times N$ células com $B$ blocos e rotações permitidas ($0^\circ$ ou $90^\circ$), o espaço de configurações possíveis cresce como $O((2 \cdot M \cdot N)^B)$. Para apenas 10 blocos em uma grade 8x8, existem mais de <strong>$10^{20}$ combinações possíveis</strong>, tornando inviável a busca exaustiva por força bruta clássica.
+            Para uma grade de <var>M × N</var> células com <var>B</var> blocos e duas orientações, um limite superior simples para o espaço de busca é <var>O((2MN)<sup>B</sup>)</var>. Com 10 blocos em uma grade 8 × 8, esse limite ultrapassa <strong>10<sup>20</sup> configurações</strong>. Problemas clássicos de floorplanning são combinatórios e motivam o uso de heurísticas como simulated annealing.<a class="source-ref" href="#ref-wong-liu" aria-label="Ver referência 1">[1]</a>
           </p>
         </div>
       </div>
@@ -157,7 +158,7 @@
         <div class="section-tag">FORMULAÇÃO FÍSICA &amp; MATEMÁTICA</div>
         <h2>O Hamiltoniano de Custo (H<sub>cost</sub> / QUBO / Ising)</h2>
         <p class="section-subtitle">
-          Na computação quântica e no annealing, o problema combinatorial é mapeado em um sistema de spins de Ising ou variáveis binárias QUBO ($x_i \in \{0, 1\}$), onde a solução de layout válida e ótima corresponde ao <strong>estado fundamental (Ground State)</strong> de menor energia.
+          O problema combinatório pode ser escrito com variáveis binárias QUBO (<var>x<sub>i</sub> ∈ {0, 1}</var>) e convertido para uma forma de Ising. A configuração de menor custo corresponde ao estado de menor energia do Hamiltoniano.<a class="source-ref" href="#ref-qubo" aria-label="Ver referência 3">[3]</a>
         </p>
       </div>
 
@@ -177,7 +178,7 @@
               Ĥ<sub>alloc</sub> = λ<sub>alloc</sub> ∑<sub>α=1</sub><sup>B</sup> ( ∑<sub>i ∈ α</sub> x<sub>i</sub> - 1 )<sup>2</sup>
             </div>
             <p>
-              Garante que cada bloco físico $\alpha$ seja alocado em <strong>exatamente uma posição e rotação</strong> na grade. Se um bloco não for posicionado ou for duplicado, a penalidade cresce quadraticamente.
+              Garante que cada bloco físico <var>α</var> seja alocado em <strong>exatamente uma posição e rotação</strong> na grade. Se um bloco não for posicionado ou for duplicado, a penalidade cresce quadraticamente.
             </p>
           </div>
 
@@ -189,19 +190,19 @@
               Ĥ<sub>overlap</sub> = λ<sub>overlap</sub> ∑<sub>(r, c)</sub> ∑<sub>α &lt; β</sub> o<sub>α</sub>(r, c) · o<sub>β</sub>(r, c)
             </div>
             <p>
-              Penaliza cada célula física $(r, c)$ da grade que for ocupada simultaneamente por dois blocos distintos $\alpha$ e $\beta$. Para garantir um chip válido, este termo deve ser estritamente zero.
+              Penaliza cada célula física <var>(r, c)</var> da grade que for ocupada simultaneamente por dois blocos distintos <var>α</var> e <var>β</var>. Para garantir um chip válido, este termo deve ser zero.
             </p>
           </div>
 
           <!-- Termo 3: Fiação / Distância -->
-          <div class="h-term-card" style="grid-column: span 2;">
+          <div class="h-term-card h-term-wide">
             <div class="h-term-badge">PARCELA 3</div>
             <h4>Ĥ<sub>dist</sub> • Comprimento de Fiação &amp; Afinidades de Conexão</h4>
             <div class="math-box">
               Ĥ<sub>dist</sub> = ∑<sub>i &lt; j</sub> ( λ<sub>dist</sub> + w<sub>ij</sub> ) · d(c<sub>i</sub>, c<sub>j</sub>) · x<sub>i</sub> · x<sub>j</sub>
             </div>
             <p>
-              Calcula a distância Manhattan entre os centros geométricos $c_i$ e $c_j$ dos blocos conectados por sinais elétricos. Conexões de alta prioridade possuem peso de afinidade $w_{ij}$ aumentado para aproximar os blocos no layout final.
+              Calcula a distância Manhattan entre os centros geométricos <var>c<sub>i</sub></var> e <var>c<sub>j</sub></var> dos blocos conectados. Conexões de alta prioridade recebem um peso de afinidade <var>w<sub>ij</sub></var> maior.
             </p>
           </div>
         </div>
@@ -211,7 +212,7 @@
           <div class="rule-icon">🛡️</div>
           <div class="rule-text">
             <strong>Regra Fundamental de Integridade Quântica:</strong>
-            As coordenadas dos blocos e a detecção de colisões são extraídas <strong>100% diretamente da função de onda quântica</strong> (medição dos qubits ou cálculo de valor esperado $\langle H_{\text{cost}} \rangle$). É terminantemente proibido o uso de algoritmos clássicos de reparo guloso pós-processamento: a validade do layout decorre exclusivamente dos pesos de penalidade ($\lambda_{\text{alloc}}, \lambda_{\text{overlap}}$) no Hamiltoniano.
+            As coordenadas e colisões são obtidas diretamente da amostra binária medida. O simulador não aplica reparo guloso após a medição: a validade depende das penalidades <var>λ<sub>alloc</sub></var> e <var>λ<sub>overlap</sub></var> definidas no Hamiltoniano.
           </div>
         </div>
       </div>
@@ -237,14 +238,14 @@
             </div>
           </div>
           <p>
-            Inspirado no resfriamento lento de metais na termodinâmica estatística (Kirkpatrick, 1983). O algoritmo aceita transições para estados de maior energia com probabilidade controlada pela temperatura:
+            Inspirado no resfriamento lento de metais na termodinâmica estatística. O algoritmo aceita transições para estados de maior energia com probabilidade controlada pela temperatura.<a class="source-ref" href="#ref-kirkpatrick" aria-label="Ver referência 2">[2]</a>
           </p>
           <div class="math-box" style="margin: 10px 0;">
             P(aceitar) = exp( -ΔE / T )
           </div>
           <ul class="dual-list">
-            <li><strong>Mecanismo:</strong> Permite "escapar" de mínimos locais quando a temperatura $T$ é alta.</li>
-            <li><strong>Convergência:</strong> Ao resfriar ($T \to 0$), estabiliza em soluções de baixa energia.</li>
+            <li><strong>Mecanismo:</strong> Pode escapar de mínimos locais quando a temperatura <var>T</var> é alta.</li>
+            <li><strong>Convergência:</strong> Ao resfriar (<var>T → 0</var>), favorece soluções de baixa energia.</li>
             <li><strong>No jogo:</strong> Motor integrado de têmpera em tempo real com taxa de resfriamento configurável e protegido pela senha <code>riscv</code>.</li>
           </ul>
         </div>
@@ -253,28 +254,25 @@
           <div class="dual-header">
             <span class="dual-icon">⚛️</span>
             <div>
-              <h3>QAOA &amp; Quantum Annealing</h3>
-              <p>O jogo inclui uma simulação local de QAOA com vetor de estado, profundidade p=1,
-              busca clássica dos parâmetros para minimizar a energia esperada e 2048 medições.
-              O botão fica desativado acima de 15 qubits do mapeamento completo, pois a memória
-              cresce como 2<sup>n</sup>. A melhor medição pode ser inválida e não há garantia de ótimo;
-              medições com alocação ausente ou múltipla são informadas sem alterar o tabuleiro.
-              Não há reparo clássico das medições. Implementação baseada em
-              <a href="https://arxiv.org/abs/1411.4028">Farhi, Goldstone e Gutmann (2014)</a>.</p>
+              <h3>QAOA (Quantum Approximate Optimization Algorithm)</h3>
               <span class="dual-tag">Computação Quântica Variacional</span>
             </div>
           </div>
           <p>
-            Explora superposição e tunelamento quântico para atravessar barreiras de potencial energéticas que aprisionam algoritmos clássicos:
+            O QAOA alterna evoluções geradas pelo Hamiltoniano de custo e por um Hamiltoniano de mistura. Um otimizador clássico ajusta os ângulos para reduzir a energia esperada.<a class="source-ref" href="#ref-qaoa" aria-label="Ver referência 4">[4]</a>
           </p>
           <div class="math-box" style="margin: 10px 0;">
             |ψ(γ, β)⟩ = ∏<sub>l=1</sub><sup>p</sup> e<sup>-i β<sub>l</sub> Ĥ<sub>M</sub></sup> e<sup>-i γ<sub>l</sub> Ĥ<sub>cost</sub></sup> |+⟩<sup>⊗N</sup>
           </div>
           <ul class="dual-list">
-            <li><strong>Mecanismo:</strong> Alterna entre o Hamiltoniano de mistura $H_M$ e o Hamiltoniano de custo $H_{\text{cost}}$.</li>
-            <li><strong>Tunelamento:</strong> Permite transições quânticas diretas através de picos de barreira de custo de colisão.</li>
-            <li><strong>Ground State:</strong> Otimiza os ângulos variacionais $(\gamma, \beta)$ para maximizar a probabilidade de medir a solução ótima.</li>
+            <li><strong>Mecanismo:</strong> Alterna entre <var>H<sub>M</sub></var> e <var>H<sub>cost</sub></var> com profundidade <var>p = 1</var>.</li>
+            <li><strong>No jogo:</strong> Simulação por vetor de estado, busca clássica de parâmetros e 2.048 medições.</li>
+            <li><strong>Limite:</strong> Disponível até 15 qubits, pois a memória da simulação cresce como 2<sup>n</sup>.</li>
+            <li><strong>Resultado:</strong> A medição é probabilística e pode produzir uma alocação inválida; não há garantia de ótimo nem reparo clássico.</li>
           </ul>
+          <div class="method-note">
+            <strong>QAOA não é quantum annealing.</strong> O quantum annealing usa um Hamiltoniano dependente do tempo e flutuações quânticas; é uma abordagem relacionada, porém distinta.<a class="source-ref" href="#ref-qa" aria-label="Ver referência 5">[5]</a>
+          </div>
         </div>
       </div>
     </section>
@@ -318,7 +316,7 @@
         </div>
 
         <p style="margin-top: 15px; font-size: 14px; line-height: 1.6; color: var(--text-muted);">
-          Neste caso de teste canônico, tanto o algoritmo quântico variacional (QAOA) quanto o Simulated Annealing clássico (Neal SA) convergem para a mesma solução ótima com custo de <strong>110.00</strong> (considerando pesos padrão $\lambda_{\text{alloc}}=50$, $\lambda_{\text{overlap}}=50$ e $\lambda_{\text{dist}}=5$). Você pode tentar encontrar manualmente este mesmo arranjo arrastando os blocos no Nível 2!
+          Neste caso de teste, o custo de referência é <strong>110.00</strong>, com <var>λ<sub>alloc</sub> = 50</var>, <var>λ<sub>overlap</sub> = 50</var> e <var>λ<sub>dist</sub> = 5</var>. O Simulated Annealing procura esse valor por movimentos estocásticos; o QAOA retorna amostras probabilísticas cuja energia pode variar entre execuções. Você também pode tentar encontrar manualmente o arranjo no Nível 2.
         </p>
       </div>
     </section>
@@ -355,7 +353,7 @@
         <div class="step-card">
           <div class="step-num">4</div>
           <h4>Monitore o Hamiltoniano</h4>
-          <p>Acompanhe na barra lateral as parcelas do Hamiltoniano ($H_{\text{alloc}}$, $H_{\text{overlap}}$, $H_{\text{dist}}$) e a energia total em tempo real.</p>
+          <p>Acompanhe na barra lateral as parcelas <var>H<sub>alloc</sub></var>, <var>H<sub>overlap</sub></var> e <var>H<sub>dist</sub></var>, além da energia total em tempo real.</p>
         </div>
 
         <div class="step-card">
@@ -381,6 +379,59 @@
           </a>
         </div>
       </div>
+    </section>
+
+    <section class="intro-section references-section" id="referencias" aria-labelledby="referencias-title">
+      <div class="section-header">
+        <div class="section-tag">BASE CIENTÍFICA</div>
+        <h2 id="referencias-title">Referências</h2>
+        <p class="section-subtitle">
+          Trabalhos que fundamentam a formulação de floorplanning, simulated annealing, QUBO, QAOA e quantum annealing apresentada nesta página.
+        </p>
+      </div>
+
+      <ol class="references-list">
+        <li class="reference-item" id="ref-wong-liu">
+          <span class="reference-number">1</span>
+          <div class="reference-content">
+            <cite>WONG, D. F.; LIU, C. L. A new algorithm for floorplan design.</cite>
+            <span>Proceedings of the 23rd ACM/IEEE Design Automation Conference, p. 101–107, 1986.</span>
+          </div>
+          <a class="reference-link" href="https://doi.org/10.1145/318013.318030" target="_blank" rel="noopener noreferrer">DOI ↗</a>
+        </li>
+        <li class="reference-item" id="ref-kirkpatrick">
+          <span class="reference-number">2</span>
+          <div class="reference-content">
+            <cite>KIRKPATRICK, S.; GELATT, C. D.; VECCHI, M. P. Optimization by Simulated Annealing.</cite>
+            <span>Science, v. 220, n. 4598, p. 671–680, 1983.</span>
+          </div>
+          <a class="reference-link" href="https://doi.org/10.1126/science.220.4598.671" target="_blank" rel="noopener noreferrer">DOI ↗</a>
+        </li>
+        <li class="reference-item" id="ref-qubo">
+          <span class="reference-number">3</span>
+          <div class="reference-content">
+            <cite>GLOVER, F.; KOCHENBERGER, G.; HENNIG, R.; DU, Y. Quantum Bridge Analytics I: a tutorial on formulating and using QUBO models.</cite>
+            <span>4OR, v. 17, p. 335–371, 2019.</span>
+          </div>
+          <a class="reference-link" href="https://doi.org/10.1007/s10288-019-00424-y" target="_blank" rel="noopener noreferrer">DOI ↗</a>
+        </li>
+        <li class="reference-item" id="ref-qaoa">
+          <span class="reference-number">4</span>
+          <div class="reference-content">
+            <cite>FARHI, E.; GOLDSTONE, J.; GUTMANN, S. A Quantum Approximate Optimization Algorithm.</cite>
+            <span>arXiv:1411.4028, 2014.</span>
+          </div>
+          <a class="reference-link" href="https://arxiv.org/abs/1411.4028" target="_blank" rel="noopener noreferrer">arXiv ↗</a>
+        </li>
+        <li class="reference-item" id="ref-qa">
+          <span class="reference-number">5</span>
+          <div class="reference-content">
+            <cite>KADOWAKI, T.; NISHIMORI, H. Quantum annealing in the transverse Ising model.</cite>
+            <span>Physical Review E, v. 58, p. 5355–5363, 1998.</span>
+          </div>
+          <a class="reference-link" href="https://arxiv.org/abs/cond-mat/9804280" target="_blank" rel="noopener noreferrer">arXiv ↗</a>
+        </li>
+      </ol>
     </section>
 
   </main>
