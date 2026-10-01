@@ -36,12 +36,17 @@
   </header>
 
   <!-- Main Grid Layout -->
-  <main>
+  <main id="game-layout">
     
     <!-- Left Sidebar: Info & Settings -->
-    <section class="panel sidebar-left" aria-label="Settings Panel">
-      <div class="panel-title">
-        <span>⚙️</span> Level Settings
+    <section class="panel sidebar-left" id="settings-sidebar" aria-label="Settings Panel">
+      <div class="panel-title sidebar-title-row">
+        <span><span aria-hidden="true">⚙️</span> Level Settings</span>
+        <button id="btn-hide-settings" class="sidebar-toggle-button" type="button"
+          aria-controls="settings-sidebar" aria-expanded="true" title="Hide settings panel">
+          <span aria-hidden="true">◀</span>
+          <span class="visually-hidden">Hide settings panel</span>
+        </button>
       </div>
       
       <div class="info-card">
@@ -124,6 +129,12 @@
         <button id="btn-reset" class="btn btn-secondary">🔄 Reset Layout</button>
       </div>
     </section>
+
+    <button id="btn-show-settings" class="sidebar-show-button" type="button"
+      aria-controls="settings-sidebar" aria-expanded="false" title="Show settings panel">
+      <span aria-hidden="true">⚙️</span>
+      <span class="visually-hidden">Show settings panel</span>
+    </button>
 
     <!-- Center: Floorplanning Grid Area -->
     <section class="game-center" aria-label="Grid Board">
@@ -234,4 +245,3 @@
   <script src="script.js?v=1.0.2"></script>
 </body>
 </html>
-

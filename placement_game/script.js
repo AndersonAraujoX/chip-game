@@ -211,6 +211,10 @@ const passwordModal = typeof document !== 'undefined' ? document.getElementById(
 const saPasswordInput = typeof document !== 'undefined' ? document.getElementById("sa-password-input") : null;
 const btnSubmitPassword = typeof document !== 'undefined' ? document.getElementById("btn-submit-password") : null;
 const btnCancelPassword = typeof document !== 'undefined' ? document.getElementById("btn-cancel-password") : null;
+const gameLayout = typeof document !== 'undefined' ? document.getElementById("game-layout") : null;
+const settingsSidebar = typeof document !== 'undefined' ? document.getElementById("settings-sidebar") : null;
+const btnHideSettings = typeof document !== 'undefined' ? document.getElementById("btn-hide-settings") : null;
+const btnShowSettings = typeof document !== 'undefined' ? document.getElementById("btn-show-settings") : null;
 
 // Theme State & DOM Elements
 let currentTheme = (typeof localStorage !== 'undefined' && localStorage.getItem('game_theme')) || 'dark';
@@ -239,9 +243,26 @@ function toggleTheme() {
   applyTheme(nextTheme);
 }
 
+function setSettingsSidebarCollapsed(collapsed) {
+  if (!gameLayout) return;
+  gameLayout.classList.toggle("settings-collapsed", collapsed);
+  if (settingsSidebar) settingsSidebar.setAttribute("aria-hidden", String(collapsed));
+  if (btnHideSettings) btnHideSettings.setAttribute("aria-expanded", String(!collapsed));
+  if (btnShowSettings) btnShowSettings.setAttribute("aria-expanded", String(!collapsed));
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('settings_sidebar_collapsed', String(collapsed));
+  }
+  if (typeof window !== 'undefined') {
+    window.requestAnimationFrame(() => drawWiring());
+  }
+}
+
 // 3. Inicialização
 function init() {
   applyTheme(currentTheme);
+  const sidebarWasCollapsed = typeof localStorage !== 'undefined' &&
+    localStorage.getItem('settings_sidebar_collapsed') === 'true';
+  setSettingsSidebarCollapsed(sidebarWasCollapsed);
   setupEventListeners();
   loadLevel(currentLevelId);
 }
@@ -290,6 +311,14 @@ function setupEventListeners() {
 
   if (btnThemeToggle) {
     btnThemeToggle.addEventListener("click", toggleTheme);
+  }
+
+  if (btnHideSettings) {
+    btnHideSettings.addEventListener("click", () => setSettingsSidebarCollapsed(true));
+  }
+
+  if (btnShowSettings) {
+    btnShowSettings.addEventListener("click", () => setSettingsSidebarCollapsed(false));
   }
 
   if (btnSaSolve) {
